@@ -4,12 +4,20 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::component::{Component, ComponentData, ExtrudeData};
 
+#[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct Instance {
     pub(crate) id: Uuid,
     component_label: String,
     pub(crate) matrix: Matrix4<f32>,
     pub(crate) config: InstanceConfig,
+}
+
+#[wasm_bindgen]
+impl Instance {
+    pub fn label(&self) -> String {
+        self.component_label.clone()
+    }
 }
 
 impl Instance {

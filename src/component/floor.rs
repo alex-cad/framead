@@ -1,12 +1,15 @@
+#[derive(Debug, Clone)]
 pub enum FloorData {
     Wheel(WheelData),
     Foot(FootData),
 }
 
+#[derive(Debug, Clone)]
 pub enum WheelData {
     Fuma(FumaWheelData),
 }
 
+#[derive(Debug, Clone)]
 pub enum FumaWheelData {
     _40F,
     _60F,
@@ -22,6 +25,7 @@ pub enum FumaWheelData {
     _150S,
 }
 
+#[derive(Debug, Clone)]
 pub enum FootData {
     OrangeHeavy,
 }

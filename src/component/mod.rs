@@ -18,6 +18,7 @@ use self::extrude::{
     S40ExtrudeSlotDepth,
 };
 
+#[derive(Debug, Clone)]
 pub enum ComponentData {
     Extrude(ExtrudeData),                   // 铝型材
     ExtrudeConnector(ExtrudeConnectorData), // 铝型材连接器，包括角码、连接板、螺母、螺栓等
@@ -35,6 +36,7 @@ pub struct Vender {
 }
 
 #[wasm_bindgen]
+#[derive(Debug, Clone)]
 pub struct Component {
     pub(crate) label: String,
     name: String,
@@ -53,11 +55,14 @@ impl Component {
     }
 }
 
+// #[wasm_bindgen]
 pub struct ComponentLib {
-    pub components: HashMap<String, Component>,
+    pub(crate) components: HashMap<String, Component>,
 }
 
+// #[wasm_bindgen]
 impl ComponentLib {
+    // #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         ComponentLib {
             components: HashMap::new(),
@@ -66,6 +71,10 @@ impl ComponentLib {
 
     pub fn add_component(&mut self, component: Component) {
         self.components.insert(component.label.clone(), component);
+    }
+
+    pub fn get_component(&self, label: String) -> Option<Component> {
+        self.components.get(&label).cloned()
     }
 }
 
@@ -167,6 +176,7 @@ impl Default for ComponentLib {
             }),
             vendor: misumi.clone(),
         });
+
         lib.add_component(Component {
             label: "WoodenPanel-test".into(),
             name: "WoodenPanel-test".into(),

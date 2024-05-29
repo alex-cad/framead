@@ -7,8 +7,8 @@ mod design;
 mod instance;
 mod utils;
 
+pub use component::Component;
 pub use design::DesignSpace;
-pub use component::ComponentLib;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]

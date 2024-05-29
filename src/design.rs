@@ -1,5 +1,4 @@
 mod operation;
-use core::str;
 
 use nalgebra::{Translation3, UnitQuaternion};
 use uuid::Uuid;
@@ -43,6 +42,10 @@ impl DesignSpace {
             records: Vec::new(),
             poped: Vec::new(),
         }
+    }
+
+    pub fn get_instances(&self) -> Vec<Instance> {
+        self.instances.clone()
     }
 }
 
