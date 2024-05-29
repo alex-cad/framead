@@ -1,0 +1,40 @@
+[package]
+name = "framead"
+version = "0.1.0"
+authors = ["shengge"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook", "wee_alloc"]
+
+[dependencies]
+wasm-bindgen = "0.2.92"
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1.7", optional = true }
+wee_alloc = { version = "0.4.5", optional = true }
+
+# gomez = "0.5.0"
+# liealg = "0.3.0"
+nalgebra = "0.32.5"
+approx = "0.5"
+
+[dependencies.uuid]
+version = "1.8.0"
+features = [
+    "v4",
+    "js",
+]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.42"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
