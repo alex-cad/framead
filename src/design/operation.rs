@@ -60,6 +60,7 @@ impl Operation for AddInstance {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RemoveInstance {
     pub(crate) id: Uuid,
@@ -90,6 +91,7 @@ impl Operation for RemoveInstance {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostProcessInstance {
     pub(crate) id: Uuid,
@@ -129,6 +131,7 @@ impl Operation for PostProcessInstance {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProfileLength {
     pub(crate) id: Uuid,
@@ -162,6 +165,7 @@ impl Operation for ProfileLength {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PanelSize {
     pub(crate) id: Uuid,
@@ -202,6 +206,7 @@ impl Operation for PanelSize {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MoveInstance {
     pub(crate) id: Uuid,
@@ -379,21 +384,27 @@ pub fn panel_add_size(
     })
 }
 
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct InstanceTrans {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+#[allow(non_snake_case, clippy::empty_docs)]
+mod move_instance_types {
+    use super::*;
+    #[derive(Debug, Tsify, Serialize, Deserialize)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    pub struct InstanceTrans {
+        pub x: f32,
+        pub y: f32,
+        pub z: f32,
+    }
+
+    #[derive(Debug, Tsify, Serialize, Deserialize)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    pub struct EulerAngles {
+        pub roll: f32,
+        pub pitch: f32,
+        pub yaw: f32,
+    }
 }
 
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct EulerAngles {
-    pub roll: f32,
-    pub pitch: f32,
-    pub yaw: f32,
-}
+pub use move_instance_types::*;
 
 #[wasm_bindgen]
 pub fn move_instance(

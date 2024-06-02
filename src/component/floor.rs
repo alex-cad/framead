@@ -1,17 +1,19 @@
+#![allow(non_snake_case, clippy::empty_docs)]
 use serde::{Deserialize, Serialize};
+use tsify::Tsify;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 pub enum FloorData {
     Wheel(WheelData),
     Foot(FootData),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 pub enum WheelData {
     Fuma(FumaWheelData),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 pub enum FumaWheelData {
     _40F,
     _60F,
@@ -27,7 +29,7 @@ pub enum FumaWheelData {
     _150S,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 pub enum FootData {
     OrangeHeavy,
 }

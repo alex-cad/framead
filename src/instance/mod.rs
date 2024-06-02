@@ -1,5 +1,7 @@
+#![allow(non_snake_case, clippy::empty_docs)]
 use nalgebra::Matrix4;
 use serde::{Deserialize, Serialize};
+use tsify::Tsify;
 use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -130,8 +132,8 @@ impl InstanceConfig {
     }
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct ExtrudeConfig {
     pub drill_left: bool,                      // 左端钻孔
     pub drill_right: bool,                     // 右端钻孔
@@ -143,31 +145,30 @@ pub struct ExtrudeConfig {
     pub length: u32,                           // 长度 精度：0.01mm
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub struct WrenchHole {
     pub number: WrenchHoleNumber,
     pub direction: WrenchHoleDirection,
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum WrenchHoleNumber {
     One,
     Two,
     Three,
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum WrenchHoleDirection {
     Horizontal, // 水平
     Vertical,   // 垂直
     Both,       // 水平和垂直
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum BevelCutConfig {
     TopToBottom,     // 断面从上到下
     BottomToTop,     // 断面从下到上
@@ -175,8 +176,8 @@ pub enum BevelCutConfig {
     InsideToOutside, // 断面从内到外
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 // 0.01mm
 pub struct PanelConfig {
     pub width: u32,
