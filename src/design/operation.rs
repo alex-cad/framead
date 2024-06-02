@@ -1,10 +1,13 @@
 use nalgebra::Isometry3;
+use serde::{Deserialize, Serialize};
+use tsify::Tsify;
 use uuid::Uuid;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     component::Component,
-    instance::{Instance, InstanceConfig},
-    DesignSpace,
+    design::DesignSpace,
+    instance::{ExtrudeConfig, Instance, InstanceConfig},
 };
 
 /// an edit operation that can be applied to a target
@@ -15,7 +18,8 @@ pub trait Operation {
     fn compress(&mut self, target: &Self) -> bool;
 }
 
-#[derive(Debug)]
+#[wasm_bindgen]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AddInstance {
     instance: Instance,
 }
@@ -56,7 +60,7 @@ impl Operation for AddInstance {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RemoveInstance {
     pub(crate) id: Uuid,
     pub(crate) removed_instance: Option<Instance>,
@@ -86,7 +90,7 @@ impl Operation for RemoveInstance {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PostProcessInstance {
     pub(crate) id: Uuid,
     pub(crate) config: InstanceConfig,
@@ -125,7 +129,7 @@ impl Operation for PostProcessInstance {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProfileLength {
     pub(crate) id: Uuid,
     pub(crate) dlength: i32,
@@ -158,7 +162,7 @@ impl Operation for ProfileLength {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PanelSize {
     pub(crate) id: Uuid,
     pub(crate) dwidth: i32,
@@ -198,7 +202,7 @@ impl Operation for PanelSize {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MoveInstance {
     pub(crate) id: Uuid,
     pub(crate) matrix: Isometry3<f32>,
@@ -227,21 +231,28 @@ impl Operation for MoveInstance {
     }
 }
 
-#[derive(Debug)]
-pub enum DesignOperation {
-    AddInstance(AddInstance),
-    RemoveInstance(RemoveInstance),
-    PostProcessInstance(PostProcessInstance),
-    ProfileLength(ProfileLength),
-    PanelSize(PanelSize),
-    MoveInstance(MoveInstance),
-    // AddConstraint,
-    // RemoveConstraint,
-    // ConfigConstraint,
-    // AddInput,
-    // RemoveInput,
-    // ConfigInput,
+#[allow(non_snake_case, clippy::empty_docs)]
+pub mod allow_non_snake_case {
+    use super::*;
+    #[derive(Debug, Tsify, Serialize, Deserialize)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    pub enum DesignOperation {
+        AddInstance(AddInstance),
+        RemoveInstance(RemoveInstance),
+        PostProcessInstance(PostProcessInstance),
+        ProfileLength(ProfileLength),
+        PanelSize(PanelSize),
+        MoveInstance(MoveInstance),
+        // AddConstraint,
+        // RemoveConstraint,
+        // ConfigConstraint,
+        // AddInput,
+        // RemoveInput,
+        // ConfigInput,
+    }
 }
+
+pub use allow_non_snake_case::DesignOperation;
 
 impl Operation for DesignOperation {
     type Target = DesignSpace;
@@ -282,4 +293,123 @@ impl Operation for DesignOperation {
             _ => false,
         }
     }
+}
+
+use crate::component::ComponentData::*;
+
+#[wasm_bindgen]
+pub fn add_normal_instance(component: &Component) -> Result<DesignOperation, String> {
+    match component.data {
+        Extrude(_) | Panel(_) => Err("invalid component type: Extrude or Panel".to_string()),
+        _ => Ok(DesignOperation::AddInstance(
+            AddInstance::default_component(component),
+        )),
+    }
+}
+
+#[wasm_bindgen]
+pub fn add_extrude_instance(component: &Component, length: u32) -> Result<DesignOperation, String> {
+    if let Some(op) = AddInstance::extrude(component, length) {
+        Ok(DesignOperation::AddInstance(op))
+    } else {
+        Err("invalid component type: Not Extrude".to_string())
+    }
+}
+
+#[wasm_bindgen]
+pub fn add_panel_instance(
+    component: &Component,
+    width: u32,
+    height: u32,
+    thickness: u32,
+) -> Result<DesignOperation, String> {
+    if let Some(op) = AddInstance::panel(component, width, height, thickness) {
+        Ok(DesignOperation::AddInstance(op))
+    } else {
+        Err("invalid component type: Not Extrude".to_string())
+    }
+}
+
+#[wasm_bindgen]
+pub fn remove_instance(instance: &Instance) -> DesignOperation {
+    DesignOperation::RemoveInstance(RemoveInstance {
+        id: instance.id,
+        removed_instance: None,
+    })
+}
+
+#[wasm_bindgen]
+pub fn extrude_post_process(
+    instance: &Instance,
+    component: &Component,
+    config: ExtrudeConfig,
+) -> Result<DesignOperation, String> {
+    let config = InstanceConfig::Extrude(config);
+    if config.is_extrude_config_valid(component) {
+        Ok(DesignOperation::PostProcessInstance(PostProcessInstance {
+            id: instance.id,
+            config,
+            config_cache: None,
+        }))
+    } else {
+        Err("invalid config".into())
+    }
+}
+
+#[wasm_bindgen]
+pub fn extrude_add_length(instance: &Instance, d_length: i32) -> DesignOperation {
+    DesignOperation::ProfileLength(ProfileLength {
+        id: instance.id,
+        dlength: d_length,
+    })
+}
+
+#[wasm_bindgen]
+pub fn panel_add_size(
+    instance: &Instance,
+    dwidth: i32,
+    dheight: i32,
+    dthickness: i32,
+) -> DesignOperation {
+    DesignOperation::PanelSize(PanelSize {
+        id: instance.id,
+        dwidth,
+        dheight,
+        dthickness,
+    })
+}
+
+#[wasm_bindgen]
+#[derive(Debug)]
+pub struct InstanceTrans {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+#[wasm_bindgen]
+#[derive(Debug)]
+pub struct EulerAngles {
+    pub roll: f32,
+    pub pitch: f32,
+    pub yaw: f32,
+}
+
+#[wasm_bindgen]
+pub fn move_instance(
+    instance: &Instance,
+    tra: InstanceTrans,
+    euler_angles: EulerAngles,
+) -> DesignOperation {
+    DesignOperation::MoveInstance(MoveInstance {
+        id: instance.id,
+        matrix: nalgebra::Isometry3::from_parts(
+            nalgebra::Translation3::new(tra.x, tra.y, tra.z),
+            nalgebra::UnitQuaternion::from_euler_angles(
+                euler_angles.roll,
+                euler_angles.pitch,
+                euler_angles.yaw,
+            ),
+        ),
+    })
 }

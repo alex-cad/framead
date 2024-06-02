@@ -3,6 +3,9 @@ name = "framead"
 version = "0.1.0"
 authors = ["shengge"]
 edition = "2018"
+repository = "https://github.com/alex-cad/framead"
+license = "MIT"
+description = "frame build fast"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,16 +22,20 @@ wasm-bindgen = "0.2.92"
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
-
-
-nalgebra = "0.32.5"
 approx = "0.5"
+tsify = "0.4.5"
+serde = { version = "1.0", features = ["derive"] }
+
+[dependencies.nalgebra]
+version = "0.32.5"
+features = ["serde-serialize"]
 
 [dependencies.uuid]
 version = "1.8.0"
 features = [
     "v4",
     "js",
+    "serde",
 ]
 
 [dev-dependencies]

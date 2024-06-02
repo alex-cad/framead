@@ -10,6 +10,8 @@ pub use extrude::ExtrudeData;
 pub use extrude_connector::ExtrudeConnectorData;
 pub use floor::FloorData;
 pub use panel::PanelData;
+use serde::{Deserialize, Serialize};
+use tsify::Tsify;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use self::extrude::{
@@ -18,25 +20,60 @@ use self::extrude::{
     S40ExtrudeSlotDepth,
 };
 
-#[derive(Debug, Clone)]
-pub enum ComponentData {
-    Extrude(ExtrudeData),                   // 铝型材
-    ExtrudeConnector(ExtrudeConnectorData), // 铝型材连接器，包括角码、连接板、螺母、螺栓等
-    Floor(FloorData),                       // 地脚, 轮子
-    Door,                                   // 门
-    Panel(PanelData),                       // 面板，桌板
-    EndCap(EndCapData),                     // 端盖
-    SlotCover,                              // 槽盖
-    Accessory,                              // 配件
+#[allow(non_snake_case, clippy::empty_docs)]
+pub mod allow_non_snake_case {
+    use super::*;
+    #[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    pub enum ComponentData {
+        Extrude(ExtrudeData),                   // 铝型材
+        ExtrudeConnector(ExtrudeConnectorData), // 铝型材连接器，包括角码、连接板、螺母、螺栓等
+        Floor(FloorData),                       // 地脚, 轮子
+        Door,                                   // 门
+        Panel(PanelData),                       // 面板，桌板
+        EndCap(EndCapData),                     // 端盖
+        SlotCover,                              // 槽盖
+        Accessory,                              // 配件
+    }
 }
 
-#[derive(Debug, Clone)]
+pub use allow_non_snake_case::ComponentData;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) enum ComponentType {
+    Extrude,
+    ExtrudeConnector,
+    Floor,
+    Door,
+    Panel,
+    EndCap,
+    SlotCover,
+    Accessory,
+}
+
+impl ComponentType {
+    pub(crate) fn from_data(data: &ComponentData) -> ComponentType {
+        match data {
+            ComponentData::Extrude(_) => Self::Extrude,
+            ComponentData::ExtrudeConnector(_) => Self::ExtrudeConnector,
+            ComponentData::Floor(_) => Self::Floor,
+            ComponentData::Door => Self::Door,
+            ComponentData::Panel(_) => Self::Panel,
+            ComponentData::EndCap(_) => Self::EndCap,
+            ComponentData::SlotCover => Self::SlotCover,
+            ComponentData::Accessory => Self::Accessory,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vender {
     name: String,
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Component {
     pub(crate) label: String,
     name: String,
@@ -44,7 +81,9 @@ pub struct Component {
     vendor: Vender,
 }
 
+#[wasm_bindgen]
 impl Component {
+    #[wasm_bindgen(constructor)]
     pub fn new(label: String, name: String, data: ComponentData, vendor: Vender) -> Self {
         Component {
             label,
@@ -63,19 +102,19 @@ pub struct ComponentLib {
 // #[wasm_bindgen]
 impl ComponentLib {
     // #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         ComponentLib {
             components: HashMap::new(),
         }
     }
 
-    pub fn add_component(&mut self, component: Component) {
+    pub(crate) fn add_component(&mut self, component: Component) {
         self.components.insert(component.label.clone(), component);
     }
 
-    pub fn get_component(&self, label: String) -> Option<Component> {
-        self.components.get(&label).cloned()
-    }
+    // pub fn get_component(&self, label: String) -> Option<Component> {
+    //     self.components.get(&label).cloned()
+    // }
 }
 
 impl Default for ComponentLib {

@@ -1,15 +1,17 @@
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FloorData {
     Wheel(WheelData),
     Foot(FootData),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WheelData {
     Fuma(FumaWheelData),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FumaWheelData {
     _40F,
     _60F,
@@ -25,7 +27,7 @@ pub enum FumaWheelData {
     _150S,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FootData {
     OrangeHeavy,
 }

@@ -1,14 +1,16 @@
 use nalgebra::Matrix4;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::component::{Component, ComponentData, ExtrudeData};
+use crate::component::{Component, ComponentData, ComponentType, ExtrudeData};
 
 #[wasm_bindgen]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instance {
     pub(crate) id: Uuid,
     component_label: String,
+    component_type: ComponentType,
     pub(crate) matrix: Matrix4<f32>,
     pub(crate) config: InstanceConfig,
 }
@@ -30,6 +32,7 @@ impl Instance {
         Instance {
             id: Uuid::new_v4(),
             component_label: component.label.clone(),
+            component_type: ComponentType::from_data(&component.data),
             matrix: Matrix4::identity(),
             config,
         }
@@ -40,6 +43,7 @@ impl Instance {
             ComponentData::Extrude(_) => Some(Instance {
                 id: Uuid::new_v4(),
                 component_label: component.label.clone(),
+                component_type: ComponentType::from_data(&component.data),
                 matrix: Matrix4::identity(),
                 config: InstanceConfig::default_extrude(length),
             }),
@@ -57,6 +61,7 @@ impl Instance {
             ComponentData::Panel(_) => Some(Instance {
                 id: Uuid::new_v4(),
                 component_label: component.label.clone(),
+                component_type: ComponentType::from_data(&component.data),
                 matrix: Matrix4::identity(),
                 config: InstanceConfig::panel(width, height, thickness),
             }),
@@ -65,7 +70,7 @@ impl Instance {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum InstanceConfig {
     Normal,                 // 默认配置
     Extrude(ExtrudeConfig), // 铝型材
@@ -94,7 +99,7 @@ impl InstanceConfig {
         })
     }
 
-    pub fn is_valid(&self, component: &Component) -> bool {
+    pub fn is_extrude_config_valid(&self, component: &Component) -> bool {
         match (self, &component.data) {
             (
                 InstanceConfig::Extrude(c),
@@ -120,15 +125,13 @@ impl InstanceConfig {
                 }
                 true
             }
-            (InstanceConfig::Panel(_), ComponentData::Panel(_)) => true,
-            (InstanceConfig::Normal, _) => true,
             _ => false,
         }
     }
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtrudeConfig {
     pub drill_left: bool,                      // 左端钻孔
     pub drill_right: bool,                     // 右端钻孔
@@ -141,14 +144,14 @@ pub struct ExtrudeConfig {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct WrenchHole {
     pub number: WrenchHoleNumber,
     pub direction: WrenchHoleDirection,
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum WrenchHoleNumber {
     One,
     Two,
@@ -156,7 +159,7 @@ pub enum WrenchHoleNumber {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum WrenchHoleDirection {
     Horizontal, // 水平
     Vertical,   // 垂直
@@ -164,7 +167,7 @@ pub enum WrenchHoleDirection {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BevelCutConfig {
     TopToBottom,     // 断面从上到下
     BottomToTop,     // 断面从下到上
@@ -173,7 +176,7 @@ pub enum BevelCutConfig {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 // 0.01mm
 pub struct PanelConfig {
     pub width: u32,

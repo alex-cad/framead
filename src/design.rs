@@ -1,14 +1,7 @@
 mod operation;
-
-use nalgebra::{Translation3, UnitQuaternion};
-use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{
-    component::Component,
-    design::operation::AddInstance,
-    instance::{ExtrudeConfig, Instance, InstanceConfig},
-};
+use crate::instance::Instance;
 
 use operation::{DesignOperation, Operation};
 
@@ -88,120 +81,123 @@ impl Record for DesignSpace {
 
 #[wasm_bindgen]
 impl DesignSpace {
-    pub fn add_normal_instance(&mut self, component: &Component) -> Result<(), String> {
-        use crate::component::ComponentData::*;
-        match component.data {
-            Extrude(_) | Panel(_) => {
-                return Err("invalid component type".to_string());
-            }
-            _ => {}
-        }
-        let op = AddInstance::default_component(component);
-        <Self as Record>::push(self, DesignOperation::AddInstance(op));
-        Ok(())
+    pub fn push(&mut self, edit: DesignOperation) {
+        <Self as Record>::push(self, edit);
     }
+    // pub fn add_normal_instance(&mut self, component: &Component) -> Result<(), String> {
+    //     use crate::component::ComponentData::*;
+    //     match component.data {
+    //         Extrude(_) | Panel(_) => {
+    //             return Err("invalid component type".to_string());
+    //         }
+    //         _ => {}
+    //     }
+    //     let op = AddInstance::default_component(component);
+    //     <Self as Record>::push(self, DesignOperation::AddInstance(op));
+    //     Ok(())
+    // }
 
-    pub fn add_extrude_instance(
-        &mut self,
-        component: &Component,
-        length: u32,
-    ) -> Result<(), String> {
-        use crate::component::ComponentData::*;
-        match component.data {
-            Extrude(_) => {}
-            _ => {
-                return Err("invalid component type".to_string());
-            }
-        }
-        let op = AddInstance::extrude(component, length).unwrap();
-        <Self as Record>::push(self, DesignOperation::AddInstance(op));
-        Ok(())
-    }
+    // pub fn add_extrude_instance(
+    //     &mut self,
+    //     component: &Component,
+    //     length: u32,
+    // ) -> Result<(), String> {
+    //     use crate::component::ComponentData::*;
+    //     match component.data {
+    //         Extrude(_) => {}
+    //         _ => {
+    //             return Err("invalid component type".to_string());
+    //         }
+    //     }
+    //     let op = AddInstance::extrude(component, length).unwrap();
+    //     <Self as Record>::push(self, DesignOperation::AddInstance(op));
+    //     Ok(())
+    // }
 
-    pub fn add_panel_instance(
-        &mut self,
-        component: &Component,
-        width: u32,
-        height: u32,
-        thickness: u32,
-    ) -> Result<(), String> {
-        use crate::component::ComponentData::*;
-        match component.data {
-            Panel(_) => {}
-            _ => {
-                return Err("invalid component type".to_string());
-            }
-        }
-        let op = AddInstance::panel(component, width, height, thickness).unwrap();
-        <Self as Record>::push(self, DesignOperation::AddInstance(op));
-        Ok(())
-    }
+    // pub fn add_panel_instance(
+    //     &mut self,
+    //     component: &Component,
+    //     width: u32,
+    //     height: u32,
+    //     thickness: u32,
+    // ) -> Result<(), String> {
+    //     use crate::component::ComponentData::*;
+    //     match component.data {
+    //         Panel(_) => {}
+    //         _ => {
+    //             return Err("invalid component type".to_string());
+    //         }
+    //     }
+    //     let op = AddInstance::panel(component, width, height, thickness).unwrap();
+    //     <Self as Record>::push(self, DesignOperation::AddInstance(op));
+    //     Ok(())
+    // }
 
-    pub fn remove_instance(&mut self, id: &str) -> Result<(), String> {
-        let op = operation::RemoveInstance {
-            id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
-            removed_instance: None,
-        };
-        <Self as Record>::push(self, DesignOperation::RemoveInstance(op));
-        Ok(())
-    }
+    // pub fn remove_instance(&mut self, id: &str) -> Result<(), String> {
+    //     let op = operation::RemoveInstance {
+    //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
+    //         removed_instance: None,
+    //     };
+    //     <Self as Record>::push(self, DesignOperation::RemoveInstance(op));
+    //     Ok(())
+    // }
 
-    pub fn extrude_post_process(&mut self, id: &str, config: ExtrudeConfig) -> Result<(), String> {
-        let op = operation::PostProcessInstance {
-            id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
-            config: InstanceConfig::Extrude(config),
-            config_cache: None,
-        };
-        <Self as Record>::push(self, DesignOperation::PostProcessInstance(op));
-        Ok(())
-    }
+    // pub fn extrude_post_process(&mut self, id: &str, config: ExtrudeConfig) -> Result<(), String> {
+    //     let op = operation::PostProcessInstance {
+    //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
+    //         config: InstanceConfig::Extrude(config),
+    //         config_cache: None,
+    //     };
+    //     <Self as Record>::push(self, DesignOperation::PostProcessInstance(op));
+    //     Ok(())
+    // }
 
-    pub fn extrude_add_length(&mut self, id: &str, dlength: i32) -> Result<(), String> {
-        let op = operation::ProfileLength {
-            id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
-            dlength,
-        };
-        <Self as Record>::push(self, DesignOperation::ProfileLength(op));
-        Ok(())
-    }
+    // pub fn extrude_add_length(&mut self, id: &str, dlength: i32) -> Result<(), String> {
+    //     let op = operation::ProfileLength {
+    //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
+    //         dlength,
+    //     };
+    //     <Self as Record>::push(self, DesignOperation::ProfileLength(op));
+    //     Ok(())
+    // }
 
-    pub fn panel_add_size(
-        &mut self,
-        id: &str,
-        dwidth: i32,
-        dheight: i32,
-        dthickness: i32,
-    ) -> Result<(), String> {
-        let op = operation::PanelSize {
-            id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
-            dwidth,
-            dheight,
-            dthickness,
-        };
-        <Self as Record>::push(self, DesignOperation::PanelSize(op));
-        Ok(())
-    }
+    // pub fn panel_add_size(
+    //     &mut self,
+    //     id: &str,
+    //     dwidth: i32,
+    //     dheight: i32,
+    //     dthickness: i32,
+    // ) -> Result<(), String> {
+    //     let op = operation::PanelSize {
+    //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
+    //         dwidth,
+    //         dheight,
+    //         dthickness,
+    //     };
+    //     <Self as Record>::push(self, DesignOperation::PanelSize(op));
+    //     Ok(())
+    // }
 
-    pub fn move_instance(
-        &mut self,
-        id: &str,
-        tra: InstanceTrans,
-        euler_angles: EulerAngles,
-    ) -> Result<(), String> {
-        let op = operation::MoveInstance {
-            id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
-            matrix: nalgebra::Isometry3::from_parts(
-                Translation3::new(tra.x, tra.y, tra.z),
-                UnitQuaternion::from_euler_angles(
-                    euler_angles.roll,
-                    euler_angles.pitch,
-                    euler_angles.yaw,
-                ),
-            ),
-        };
-        <Self as Record>::push(self, DesignOperation::MoveInstance(op));
-        Ok(())
-    }
+    // pub fn move_instance(
+    //     &mut self,
+    //     id: &str,
+    //     tra: InstanceTrans,
+    //     euler_angles: EulerAngles,
+    // ) -> Result<(), String> {
+    //     let op = operation::MoveInstance {
+    //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
+    //         matrix: nalgebra::Isometry3::from_parts(
+    //             Translation3::new(tra.x, tra.y, tra.z),
+    //             UnitQuaternion::from_euler_angles(
+    //                 euler_angles.roll,
+    //                 euler_angles.pitch,
+    //                 euler_angles.yaw,
+    //             ),
+    //         ),
+    //     };
+    //     <Self as Record>::push(self, DesignOperation::MoveInstance(op));
+    //     Ok(())
+    // }
 
     pub fn pop(&mut self) {
         <Self as Record>::pop(self);
@@ -210,22 +206,6 @@ impl DesignSpace {
     pub fn repush(&mut self) {
         <Self as Record>::repush(self);
     }
-}
-
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct InstanceTrans {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct EulerAngles {
-    pub roll: f32,
-    pub pitch: f32,
-    pub yaw: f32,
 }
 
 #[cfg(test)]
