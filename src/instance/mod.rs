@@ -1,11 +1,14 @@
 #![allow(non_snake_case, clippy::empty_docs)]
-use nalgebra::Matrix4;
+use nalgebra::Isometry3;
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::component::{Component, ComponentData, ComponentType, ExtrudeData};
+use crate::{
+    component::{Component, ComponentData, ComponentType, ExtrudeData},
+    Quaternion, Translation,
+};
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,7 +16,7 @@ pub struct Instance {
     pub(crate) id: Uuid,
     component_label: String,
     component_type: ComponentType,
-    pub(crate) matrix: Matrix4<f32>,
+    pub(crate) matrix: Isometry3<f32>,
     pub(crate) config: InstanceConfig,
 }
 
@@ -21,6 +24,31 @@ pub struct Instance {
 impl Instance {
     pub fn label(&self) -> String {
         self.component_label.clone()
+    }
+
+    pub fn component_type(&self) -> ComponentType {
+        self.component_type
+    }
+
+    pub fn trans(&self) -> Translation {
+        Translation {
+            x: self.matrix.translation.x,
+            y: self.matrix.translation.y,
+            z: self.matrix.translation.z,
+        }
+    }
+
+    pub fn quat(&self) -> Quaternion {
+        Quaternion {
+            i: self.matrix.rotation.i,
+            j: self.matrix.rotation.j,
+            k: self.matrix.rotation.k,
+            w: self.matrix.rotation.w,
+        }
+    }
+
+    pub fn instance_config(&self) -> InstanceConfig {
+        self.config.clone()
     }
 }
 
@@ -35,7 +63,7 @@ impl Instance {
             id: Uuid::new_v4(),
             component_label: component.label.clone(),
             component_type: ComponentType::from_data(&component.data),
-            matrix: Matrix4::identity(),
+            matrix: Isometry3::identity(),
             config,
         }
     }
@@ -46,7 +74,7 @@ impl Instance {
                 id: Uuid::new_v4(),
                 component_label: component.label.clone(),
                 component_type: ComponentType::from_data(&component.data),
-                matrix: Matrix4::identity(),
+                matrix: Isometry3::identity(),
                 config: InstanceConfig::default_extrude(length),
             }),
             _ => None,
@@ -64,7 +92,7 @@ impl Instance {
                 id: Uuid::new_v4(),
                 component_label: component.label.clone(),
                 component_type: ComponentType::from_data(&component.data),
-                matrix: Matrix4::identity(),
+                matrix: Isometry3::identity(),
                 config: InstanceConfig::panel(width, height, thickness),
             }),
             _ => None,
@@ -72,7 +100,8 @@ impl Instance {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub enum InstanceConfig {
     Normal,                 // 默认配置
     Extrude(ExtrudeConfig), // 铝型材
@@ -151,14 +180,12 @@ pub struct WrenchHole {
     pub direction: WrenchHoleDirection,
 }
 
-
 #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum WrenchHoleNumber {
     One,
     Two,
     Three,
 }
-
 
 #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum WrenchHoleDirection {
@@ -167,7 +194,6 @@ pub enum WrenchHoleDirection {
     Both,       // 水平和垂直
 }
 
-
 #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
 pub enum BevelCutConfig {
     TopToBottom,     // 断面从上到下
@@ -175,7 +201,6 @@ pub enum BevelCutConfig {
     OutsideToInside, // 断面从外到内
     InsideToOutside, // 断面从内到外
 }
-
 
 #[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
 // 0.01mm

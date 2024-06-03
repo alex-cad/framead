@@ -5,9 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    component::Component,
-    design::DesignSpace,
-    instance::{ExtrudeConfig, Instance, InstanceConfig},
+    component::Component, design::DesignSpace, instance::{ExtrudeConfig, Instance, InstanceConfig}, Quaternion, Translation
 };
 
 /// an edit operation that can be applied to a target
@@ -219,14 +217,14 @@ impl Operation for MoveInstance {
     fn operate(&mut self, target: &mut Self::Target) {
         let index = target.instances.iter().position(|i| i.id == self.id);
         if let Some(index) = index {
-            target.instances[index].matrix *= self.matrix.to_homogeneous();
+            target.instances[index].matrix *= self.matrix;
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
         let index = target.instances.iter().position(|i| i.id == self.id);
         if let Some(index) = index {
-            target.instances[index].matrix *= self.matrix.inverse().to_homogeneous();
+            target.instances[index].matrix *= self.matrix.inverse();
         }
     }
 
@@ -384,43 +382,15 @@ pub fn panel_add_size(
     })
 }
 
-#[allow(non_snake_case, clippy::empty_docs)]
-mod move_instance_types {
-    use super::*;
-    #[derive(Debug, Tsify, Serialize, Deserialize)]
-    #[tsify(into_wasm_abi, from_wasm_abi)]
-    pub struct InstanceTrans {
-        pub x: f32,
-        pub y: f32,
-        pub z: f32,
-    }
-
-    #[derive(Debug, Tsify, Serialize, Deserialize)]
-    #[tsify(into_wasm_abi, from_wasm_abi)]
-    pub struct EulerAngles {
-        pub roll: f32,
-        pub pitch: f32,
-        pub yaw: f32,
-    }
-}
-
-pub use move_instance_types::*;
-
 #[wasm_bindgen]
-pub fn move_instance(
-    instance: &Instance,
-    tra: InstanceTrans,
-    euler_angles: EulerAngles,
-) -> DesignOperation {
+pub fn move_instance(instance: &Instance, tra: Translation, quat: Quaternion) -> DesignOperation {
     DesignOperation::MoveInstance(MoveInstance {
         id: instance.id,
         matrix: nalgebra::Isometry3::from_parts(
             nalgebra::Translation3::new(tra.x, tra.y, tra.z),
-            nalgebra::UnitQuaternion::from_euler_angles(
-                euler_angles.roll,
-                euler_angles.pitch,
-                euler_angles.yaw,
-            ),
+            nalgebra::UnitQuaternion::new_normalize(nalgebra::Quaternion::new(
+                quat.w, quat.i, quat.j, quat.k,
+            )),
         ),
     })
 }

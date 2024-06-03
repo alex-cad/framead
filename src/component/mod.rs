@@ -35,21 +35,22 @@ pub mod allow_non_snake_case {
         SlotCover,                              // 槽盖
         Accessory,                              // 配件
     }
+
+    #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    pub enum ComponentType {
+        Extrude,
+        ExtrudeConnector,
+        Floor,
+        Door,
+        Panel,
+        EndCap,
+        SlotCover,
+        Accessory,
+    }
 }
 
-pub use allow_non_snake_case::ComponentData;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) enum ComponentType {
-    Extrude,
-    ExtrudeConnector,
-    Floor,
-    Door,
-    Panel,
-    EndCap,
-    SlotCover,
-    Accessory,
-}
+pub use allow_non_snake_case::*;
 
 impl ComponentType {
     pub(crate) fn from_data(data: &ComponentData) -> ComponentType {
@@ -70,6 +71,19 @@ impl ComponentType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vender {
     name: String,
+}
+
+#[wasm_bindgen]
+impl Vender {
+    #[wasm_bindgen(constructor)]
+    pub fn new(name: String) -> Self {
+        Vender { name }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
 }
 
 #[wasm_bindgen]
