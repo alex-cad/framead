@@ -3,7 +3,7 @@
 import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, AddInstance, add_extrude_instance, move_instance } from "framead";
 import { atom } from "jotai";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Scene, WebGLRenderer, PerspectiveCamera, Vector3, DirectionalLight, PCFSoftShadowMap, Color, EquirectangularReflectionMapping, Group, InstancedMesh, Material, MeshStandardMaterial, TextureLoader, SRGBColorSpace, GridHelper, AxesHelper, Mesh, Object3D, Raycaster, Vector2, Matrix4, Quaternion } from "three";
 import { STLLoader, TransformControls } from "three/examples/jsm/Addons.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -39,7 +39,7 @@ function setup_fullscreen_threejs(canvas: HTMLCanvasElement): Renderer {
   camera.lookAt(new Vector3(0, 0, 0));
 
   // control
-  
+
 
   // light
   // const hemiLight = new HemisphereLight(0xffffff, 0x8d8d8d, 3);
@@ -133,54 +133,114 @@ class ComponentLib {
 
 class RenderSpace {
   group: Group;
-  component_label_mesh_map: Map<string, Mesh>;
+  component_mesh_lib: Map<string, Mesh>;
+  instance_meshs: Map<string, Mesh>;
   constructor(component_lib: ComponentLib) {
     this.group = new Group();
     this.group.name = "render space";
-    this.component_label_mesh_map = new Map();
+    this.component_mesh_lib = new Map();
+    this.instance_meshs = new Map();
     for (let [label, value] of component_lib.map) {
       new STLLoader().load(value.mesh_url, (geometry) => {
         const mesh = new Mesh(geometry, value.material);
-        this.component_label_mesh_map.set(label, mesh);
+        this.component_mesh_lib.set(label, mesh);
       });
     }
   }
 
-  update_mesh(design: DesignSpace) {
-    this.group.clear();
+  move_instance(instance: Instance, m: Matrix4) {
+    // design.get_instances().forEach((instance) => {
+    // });
+    // let mesh = this.instance_meshs.get(instance.id());
+    // if (mesh) {
+    //   const translation = instance.trans();
+    //   mesh.position.set(translation.x, translation.y, translation.z);
+    //   const quat = instance.quat();
+    //   mesh.quaternion.set(quat.i, quat.j, quat.k, quat.w);
+    // }
+  }
+
+  rebuild(design: DesignSpace) {
     design.get_instances().forEach((instance) => {
-      const label = instance.label();
-      const mesh = this.component_label_mesh_map.get(label);
+      let mesh = this.instance_meshs.get(instance.id());
+
       if (mesh) {
-        let m = mesh.clone();
-        m.userData = instance;
-        const translation = instance.trans();
-        m.position.set(translation.x, translation.y, translation.z);
-        const quat = instance.quat();
-        m.quaternion.set(quat.i, quat.j, quat.k, quat.w);
-        const type = instance.component_type();
-        if (type == "Extrude") {
-          const config = instance.instance_config();
-          let extrude_config = (config as { Extrude: ExtrudeConfig }).Extrude;
+        // 可能改变了位置与配置
+        mesh.name = "stay";
+        if (!instance.is_equal(mesh.userData as Instance)) {
+          if (!instance.is_matrix_equal(mesh.userData as Instance)) {
+            const translation = instance.trans();
+            mesh.position.set(translation.x, translation.y, translation.z);
+            const quat = instance.quat();
+            mesh.quaternion.set(quat.i, quat.j, quat.k, quat.w);
+          }
+          if (!instance.is_config_equal(mesh.userData as Instance)) {
+            const type = instance.component_type();
+            if (type == "Extrude") {
+              const config = instance.instance_config();
+              let extrude_config = (config as { Extrude: ExtrudeConfig }).Extrude;
 
-          // extrude length
-          // 0.01mm 100mm
-          let x_scale = extrude_config.length / 100 / 100;
-          m.scale.set(x_scale, 1, 1);
+              // extrude length
+              // 0.01mm 100mm
+              let x_scale = extrude_config.length / 100 / 100;
+              mesh.scale.set(x_scale, 1, 1);
 
-        } else if (type == "Panel") {
-          const config = instance.instance_config();
-          let panel_config = (config as { Panel: PanelConfig }).Panel;
+            } else if (type == "Panel") {
+              const config = instance.instance_config();
+              let panel_config = (config as { Panel: PanelConfig }).Panel;
 
-          // let panel = instance.component_panel();
-          // let panel_size = panel.size;
-          // this.group.add(m);
+              // let panel = instance.component_panel();
+              // let panel_size = panel.size;
+              // this.group.add(m);
+            }
+          }
         }
-        // mesh matrix
-        
-        this.group.add(m);
       } else {
-        console.log("what? should never happend")
+        // 找不到mesh，新加入的mesh
+        const label = instance.label();
+        const mesh = this.component_mesh_lib.get(label);
+        if (mesh) {
+          let m = mesh.clone();
+          m.name = "stay";
+          m.userData = instance;
+          const translation = instance.trans();
+          m.position.set(translation.x, translation.y, translation.z);
+          const quat = instance.quat();
+          m.quaternion.set(quat.i, quat.j, quat.k, quat.w);
+          const type = instance.component_type();
+          if (type == "Extrude") {
+            const config = instance.instance_config();
+            let extrude_config = (config as { Extrude: ExtrudeConfig }).Extrude;
+
+            // extrude length
+            // 0.01mm 100mm
+            let x_scale = extrude_config.length / 100 / 100;
+            m.scale.set(x_scale, 1, 1);
+
+          } else if (type == "Panel") {
+            const config = instance.instance_config();
+            let panel_config = (config as { Panel: PanelConfig }).Panel;
+
+            // let panel = instance.component_panel();
+            // let panel_size = panel.size;
+            // this.group.add(m);
+          }
+
+          this.group.add(m);
+          this.instance_meshs.set(instance.id(), m);
+        } else {
+          console.log("what? should never happend")
+        }
+      }
+    });
+
+    // 寻找没有stay标记的mesh，删除
+    this.group.children.forEach((child) => {
+      if (child.name != "stay") {
+        this.group.remove(child);
+        this.instance_meshs.delete((child.userData as Instance).id());
+      } else {
+        child.name = "";
       }
     });
   }
@@ -202,7 +262,7 @@ class Design {
       return;
     }
     this.design_space.push(add_extrude_instance(component, length));
-    this.update_render_space();
+    this.rebuild_render_space();
   }
 
   move_instance(instance: Instance, m: Matrix4) {
@@ -221,11 +281,11 @@ class Design {
         w: quaternion.w,
       }
     ));
-    this.update_render_space();
+    // this.rebuild_render_space();
   }
 
-  update_render_space() {
-    this.render_space.update_mesh(this.design_space);
+  rebuild_render_space() {
+    this.render_space.rebuild(this.design_space);
   }
 }
 
@@ -293,21 +353,28 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
 
   let last_matrix = new Matrix4();
   control.addEventListener("objectChange", () => {
+    if (instance_mesh) {
+      control_tip.matrix.decompose(instance_mesh.position, instance_mesh.quaternion, new Vector3());
+    }
+
     handle_instance_move(last_matrix.invert().multiply(control_tip.matrix));
     last_matrix.copy(control_tip.matrix);
   });
 
   let instance: Instance | null = null;
+  let instance_mesh: Mesh | null = null;
   let handle_instance_move = (m: Matrix4) => {
     if (instance) {
       design.move_instance(instance, m);
     }
   }
-  const bind_instance = (i: Instance) => {
+  const bind_instance = (i: Instance, mesh: Mesh) => {
     instance = i;
+    instance_mesh = mesh;
   }
   const unbind_instance = () => {
     instance = null;
+    instance_mesh = null;
   }
 
   const hide_control = () => {
@@ -337,7 +404,7 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
       pointer_move += Math.abs(e.movementX) + Math.abs(e.movementY);
     }
   })
-  window.addEventListener("mouseup", (event) => {
+  renderer.canvas.addEventListener("mouseup", (event) => {
     is_mouse_down = false;
     if (pointer_move < 5) {
       pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -347,24 +414,22 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
       if (intersects.length > 0) {
         const intersect = intersects[0];
         set_control_tip(intersect.object.matrix);
-        bind_instance(intersect.object.userData as Instance);
+        bind_instance(intersect.object.userData as Instance, intersect.object as Mesh);
       } else {
         hide_control();
         unbind_instance();
       }
     }
   });
+  return { transform_control: control, orbit_control: orbit };
 }
 
 export default function Home() {
   const canvas_ref = useRef(null);
   const initialized = useRef(false);
 
-  const [count, setCount] = useState(0);
-  const handlePlusOne = () => {
-    setCount((count) => count + 1);
-  }
   const design = useRef<Design | null>(null);
+  const transform_control = useRef<TransformControls | null>(null);
 
   const [instances, setInstances] = useState<{ name: string, id: string }[]>([]);
 
@@ -375,7 +440,8 @@ export default function Home() {
       wasm_init().then(init_design).then((init_design) => {
         design.current = init_design;
         renderer.scene.add(init_design.render_space.group);
-        init_canvas_controls(init_design, renderer);
+        const controls = init_canvas_controls(init_design, renderer);
+        transform_control.current = controls.transform_control;
       });
     }
   }, []);
@@ -385,17 +451,30 @@ export default function Home() {
     setInstances(design.current?.design_space.get_instances().map((instance) => {
       return {
         name: instance.label(),
-        id: instance.component_type(),
+        id: instance.id(),
       }
     }
     ) ?? []);
   }
 
+  const handleRotationControlMode = (e: MouseEvent) => {
+    e.stopPropagation();
+    transform_control.current?.setMode("rotate");
+  }
+
+  const handleTranslationControlMode = (e: MouseEvent) => {
+    e.stopPropagation();
+    transform_control.current?.setMode("translate");
+  }
+
   return (
     <div>
       <canvas ref={canvas_ref}></canvas>
-      <div className="absolute top-0 left-0">
+      <div className="absolute top-0 left-0 z-10">
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加零件</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleTranslationControlMode} >移动控制模式</button>
+        
         <div className="p-2 m-2 bg-slate-50">
           {
             instances.map((instance, index) => (

@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Instance {
     pub(crate) id: Uuid,
     pub(crate) component_label: String,
@@ -22,6 +22,10 @@ pub struct Instance {
 
 #[wasm_bindgen]
 impl Instance {
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+
     pub fn label(&self) -> String {
         self.component_label.clone()
     }
@@ -49,6 +53,18 @@ impl Instance {
 
     pub fn instance_config(&self) -> InstanceConfig {
         self.config.clone()
+    }
+
+    pub fn is_equal(&self, other: &Instance) -> bool {
+        self == other
+    }
+
+    pub fn is_matrix_equal(&self, other: &Instance) -> bool {
+        self.matrix == other.matrix
+    }
+
+    pub fn is_config_equal(&self, other: &Instance) -> bool {
+        self.config == other.config
     }
 }
 
