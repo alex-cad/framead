@@ -168,13 +168,13 @@ impl DesignSpace {
     //     dheight: i32,
     //     dthickness: i32,
     // ) -> Result<(), String> {
-    //     let op = operation::PanelSize {
+    //     let op = operation::PanelAddSize {
     //         id: Uuid::parse_str(id).map_err(|e| e.to_string())?,
     //         dwidth,
     //         dheight,
     //         dthickness,
     //     };
-    //     <Self as Record>::push(self, DesignOperation::PanelSize(op));
+    //     <Self as Record>::push(self, DesignOperation::PanelAddSize(op));
     //     Ok(())
     // }
 
@@ -361,12 +361,12 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
+        design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id: design.instances[0].id,
             dlength: 100000,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
-        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
+        design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id: design.instances[0].id,
             dlength: -100000,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
@@ -381,7 +381,7 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
+        design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id: design.instances[0].id,
             dlength: 100000,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
@@ -399,12 +399,12 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
+        design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id: design.instances[0].id,
             dlength: 100000,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
-        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
+        design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id: design.instances[0].id,
             dlength: 100000,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
@@ -474,7 +474,7 @@ mod test {
         )
         .unwrap();
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelSize(PanelSize {
+        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
         //     id: design.instances[0].id,
         //     dwidth: 100,
         //     dheight: 100,
@@ -496,7 +496,7 @@ mod test {
         )
         .unwrap();
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelSize(PanelSize {
+        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
         //     id: design.instances[0].id,
         //     dwidth: 100,
         //     dheight: 100,
@@ -521,14 +521,14 @@ mod test {
         )
         .unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::PanelSize(PanelSize {
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id: design.instances[0].id,
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
             matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
-        design.push(DesignOperation::PanelSize(PanelSize {
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id: design.instances[0].id,
             dwidth: 100,
             dheight: 100,

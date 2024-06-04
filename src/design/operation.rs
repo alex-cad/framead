@@ -134,13 +134,13 @@ impl Operation for PostProcessInstance {
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ExtrudeLength {
+pub struct ExtrudeAddLength {
     pub(crate) id: Uuid,
     pub(crate) dlength: i32,
     pub(crate) matrix: Isometry3<f32>,
 }
 
-impl Operation for ExtrudeLength {
+impl Operation for ExtrudeAddLength {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
@@ -171,7 +171,7 @@ impl Operation for ExtrudeLength {
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PanelSize {
+pub struct PanelAddSize {
     pub(crate) id: Uuid,
     pub(crate) dwidth: i32,
     pub(crate) dheight: i32,
@@ -179,7 +179,7 @@ pub struct PanelSize {
     pub(crate) matrix: Isometry3<f32>,
 }
 
-impl Operation for PanelSize {
+impl Operation for PanelAddSize {
     type Target = DesignSpace;
     fn operate(&mut self, target: &mut Self::Target) {
         let index = target.instances.iter().position(|i| i.id == self.id);
@@ -252,8 +252,8 @@ pub mod allow_non_snake_case {
         AddInstance(AddInstance),
         RemoveInstance(RemoveInstance),
         PostProcessInstance(PostProcessInstance),
-        ExtrudeLength(ExtrudeLength),
-        PanelSize(PanelSize),
+        ExtrudeAddLength(ExtrudeAddLength),
+        PanelAddSize(PanelAddSize),
         MoveInstance(MoveInstance),
         // AddConstraint,
         // RemoveConstraint,
@@ -274,8 +274,8 @@ impl Operation for DesignOperation {
             DesignOperation::AddInstance(op) => op.operate(target),
             DesignOperation::RemoveInstance(op) => op.operate(target),
             DesignOperation::PostProcessInstance(op) => op.operate(target),
-            DesignOperation::ExtrudeLength(op) => op.operate(target),
-            DesignOperation::PanelSize(op) => op.operate(target),
+            DesignOperation::ExtrudeAddLength(op) => op.operate(target),
+            DesignOperation::PanelAddSize(op) => op.operate(target),
             DesignOperation::MoveInstance(op) => op.operate(target),
         }
     }
@@ -285,21 +285,21 @@ impl Operation for DesignOperation {
             DesignOperation::AddInstance(op) => op.inverse(target),
             DesignOperation::RemoveInstance(op) => op.inverse(target),
             DesignOperation::PostProcessInstance(op) => op.inverse(target),
-            DesignOperation::ExtrudeLength(op) => op.inverse(target),
-            DesignOperation::PanelSize(op) => op.inverse(target),
+            DesignOperation::ExtrudeAddLength(op) => op.inverse(target),
+            DesignOperation::PanelAddSize(op) => op.inverse(target),
             DesignOperation::MoveInstance(op) => op.inverse(target),
         }
     }
 
     fn compress(&mut self, target: &Self) -> bool {
         match (self, target) {
-            (DesignOperation::ExtrudeLength(op), DesignOperation::ExtrudeLength(target)) => {
+            (DesignOperation::ExtrudeAddLength(op), DesignOperation::ExtrudeAddLength(target)) => {
                 op.compress(target)
             }
             (DesignOperation::MoveInstance(op), DesignOperation::MoveInstance(target)) => {
                 op.compress(target)
             }
-            (DesignOperation::PanelSize(op), DesignOperation::PanelSize(target)) => {
+            (DesignOperation::PanelAddSize(op), DesignOperation::PanelAddSize(target)) => {
                 op.compress(target)
             }
             _ => false,
@@ -375,7 +375,7 @@ pub fn extrude_add_length(
     tra: Translation,
     quat: Quaternion,
 ) -> DesignOperation {
-    DesignOperation::ExtrudeLength(ExtrudeLength {
+    DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
         id: instance.id,
         dlength: d_length,
         matrix: nalgebra::Isometry3::from_parts(
@@ -396,7 +396,7 @@ pub fn panel_add_size(
     tra: Translation,
     quat: Quaternion,
 ) -> DesignOperation {
-    DesignOperation::PanelSize(PanelSize {
+    DesignOperation::PanelAddSize(PanelAddSize {
         id: instance.id,
         dwidth,
         dheight,
@@ -570,7 +570,7 @@ mod test {
             Translation::identity(),
             Quaternion::identity(),
         );
-        if let DesignOperation::ExtrudeLength(op) = op {
+        if let DesignOperation::ExtrudeAddLength(op) = op {
             assert_eq!(op.id, instance.id);
             assert_eq!(op.dlength, 1000);
             assert_eq!(op.matrix, Isometry3::identity());
@@ -600,7 +600,7 @@ mod test {
             Translation::identity(),
             Quaternion::identity(),
         );
-        if let DesignOperation::PanelSize(op) = op {
+        if let DesignOperation::PanelAddSize(op) = op {
             assert_eq!(op.id, instance.id);
             assert_eq!(op.dwidth, 100);
             assert_eq!(op.dheight, 100);
