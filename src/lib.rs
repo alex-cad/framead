@@ -33,6 +33,16 @@ mod trans_rot_types {
         pub z: f32,
     }
 
+    impl Translation {
+        pub fn identity() -> Self {
+            Self {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            }
+        }
+    }
+
     #[derive(Debug, Tsify, Serialize, Deserialize)]
     #[tsify(into_wasm_abi, from_wasm_abi)]
     pub struct Quaternion {
@@ -40,6 +50,17 @@ mod trans_rot_types {
         pub j: f32,
         pub k: f32,
         pub w: f32,
+    }
+
+    impl Quaternion {
+        pub fn identity() -> Self {
+            Self {
+                i: 0.,
+                j: 0.,
+                k: 0.,
+                w: 1.,
+            }
+        }
     }
 }
 

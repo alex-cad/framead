@@ -36,7 +36,7 @@ pub mod allow_non_snake_case {
         Accessory,                              // 配件
     }
 
-    #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize, PartialEq, Eq)]
     #[tsify(into_wasm_abi, from_wasm_abi)]
     pub enum ComponentType {
         Extrude,
@@ -238,6 +238,15 @@ impl Default for ComponentLib {
                 name: "Fake Panel Maker".to_string(),
             },
         });
+
+        lib.add_component(Component {
+            label: "Accessory-test".into(),
+            name: "Accessory-test".into(),
+            data: ComponentData::Accessory,
+            vendor: Vender {
+                name: "Fake Accessory Maker".to_string(),
+            },
+        });
         lib
     }
 }
@@ -251,6 +260,6 @@ mod test {
     #[wasm_bindgen_test]
     fn component_lib_test() {
         let lib = ComponentLib::default();
-        assert_eq!(lib.components.len(), 4);
+        assert_eq!(lib.components.len(), 5);
     }
 }

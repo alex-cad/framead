@@ -212,7 +212,7 @@ impl DesignSpace {
 mod test {
     use crate::{
         component::ComponentLib,
-        instance::{ExtrudeConfig, InstanceConfig},
+        instance::{ExtrudeConfig, InstanceConfig}, log,
         // log,
     };
 
@@ -361,13 +361,15 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ProfileLength(ProfileLength {
+        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
             id: design.instances[0].id,
             dlength: 100000,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
-        design.push(DesignOperation::ProfileLength(ProfileLength {
+        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
             id: design.instances[0].id,
             dlength: -100000,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
         // log(&format!("{:#?}", design));
     }
@@ -379,14 +381,15 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ProfileLength(ProfileLength {
+        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
             id: design.instances[0].id,
             dlength: 100000,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
         design.pop();
-        // log(&format!("{:#?}", design));
+        log(&format!("{:#?}", design));
         design.repush();
-        // log(&format!("{:#?}", design));
+        log(&format!("{:#?}", design));
     }
 
     #[wasm_bindgen_test]
@@ -396,13 +399,15 @@ mod test {
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
         design.push(DesignOperation::AddInstance(add));
-        design.push(DesignOperation::ProfileLength(ProfileLength {
+        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
             id: design.instances[0].id,
             dlength: 100000,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
-        design.push(DesignOperation::ProfileLength(ProfileLength {
+        design.push(DesignOperation::ExtrudeLength(ExtrudeLength {
             id: design.instances[0].id,
             dlength: 100000,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
         // log(&format!("{:#?}", design));
     }
@@ -521,12 +526,14 @@ mod test {
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
         design.push(DesignOperation::PanelSize(PanelSize {
             id: design.instances[0].id,
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
+            matrix: Isometry3::translation(100.0, 100.0, 100.0),
         }));
         // log(&format!("{:#?}", design));
     }

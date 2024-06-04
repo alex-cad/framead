@@ -14,8 +14,8 @@ use crate::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instance {
     pub(crate) id: Uuid,
-    component_label: String,
-    component_type: ComponentType,
+    pub(crate) component_label: String,
+    pub(crate) component_type: ComponentType,
     pub(crate) matrix: Isometry3<f32>,
     pub(crate) config: InstanceConfig,
 }
@@ -70,13 +70,20 @@ impl Instance {
 
     pub(crate) fn default_extrude(component: &Component, length: u32) -> Option<Instance> {
         match &component.data {
-            ComponentData::Extrude(_) => Some(Instance {
-                id: Uuid::new_v4(),
-                component_label: component.label.clone(),
-                component_type: ComponentType::from_data(&component.data),
-                matrix: Isometry3::identity(),
-                config: InstanceConfig::default_extrude(length),
-            }),
+            ComponentData::Extrude(_) => {
+                let config = InstanceConfig::default_extrude(length);
+                if config.is_extrude_config_valid(component) {
+                    Some(Instance {
+                        id: Uuid::new_v4(),
+                        component_label: component.label.clone(),
+                        component_type: ComponentType::from_data(&component.data),
+                        matrix: Isometry3::identity(),
+                        config: InstanceConfig::default_extrude(length),
+                    })
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -100,7 +107,7 @@ impl Instance {
     }
 }
 
-#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub enum InstanceConfig {
     Normal,                 // 默认配置
@@ -161,7 +168,7 @@ impl InstanceConfig {
     }
 }
 
-#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct ExtrudeConfig {
     pub drill_left: bool,                      // 左端钻孔
@@ -174,27 +181,27 @@ pub struct ExtrudeConfig {
     pub length: u32,                           // 长度 精度：0.01mm
 }
 
-#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WrenchHole {
     pub number: WrenchHoleNumber,
     pub direction: WrenchHoleDirection,
 }
 
-#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WrenchHoleNumber {
     One,
     Two,
     Three,
 }
 
-#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WrenchHoleDirection {
     Horizontal, // 水平
     Vertical,   // 垂直
     Both,       // 水平和垂直
 }
 
-#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BevelCutConfig {
     TopToBottom,     // 断面从上到下
     BottomToTop,     // 断面从下到上
@@ -202,7 +209,7 @@ pub enum BevelCutConfig {
     InsideToOutside, // 断面从内到外
 }
 
-#[derive(Debug, Clone, Tsify, Serialize, Deserialize)]
+#[derive(Debug, Clone, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 // 0.01mm
 pub struct PanelConfig {
     pub width: u32,
