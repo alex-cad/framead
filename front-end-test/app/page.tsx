@@ -1,10 +1,10 @@
 "use client"
 
-import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, AddInstance, add_extrude_instance } from "framead";
+import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, AddInstance, add_extrude_instance, move_instance } from "framead";
 import { atom } from "jotai";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Scene, WebGLRenderer, PerspectiveCamera, Vector3, DirectionalLight, PCFSoftShadowMap, Color, EquirectangularReflectionMapping, Group, InstancedMesh, Material, MeshStandardMaterial, TextureLoader, SRGBColorSpace, GridHelper, AxesHelper, Mesh, Object3D, Raycaster, Vector2, Matrix4 } from "three";
+import { Scene, WebGLRenderer, PerspectiveCamera, Vector3, DirectionalLight, PCFSoftShadowMap, Color, EquirectangularReflectionMapping, Group, InstancedMesh, Material, MeshStandardMaterial, TextureLoader, SRGBColorSpace, GridHelper, AxesHelper, Mesh, Object3D, Raycaster, Vector2, Matrix4, Quaternion } from "three";
 import { STLLoader, TransformControls } from "three/examples/jsm/Addons.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { div, label } from "three/examples/jsm/nodes/Nodes.js";
@@ -13,7 +13,6 @@ import { useImmer } from "use-immer";
 interface Renderer {
   camera: PerspectiveCamera;
   canvas: HTMLCanvasElement;
-  orbit: OrbitControls;
   scene: Scene;
 }
 
@@ -40,7 +39,7 @@ function setup_fullscreen_threejs(canvas: HTMLCanvasElement): Renderer {
   camera.lookAt(new Vector3(0, 0, 0));
 
   // control
-  const orbit = new OrbitControls(camera, canvas);
+  
 
   // light
   // const hemiLight = new HemisphereLight(0xffffff, 0x8d8d8d, 3);
@@ -86,7 +85,7 @@ function setup_fullscreen_threejs(canvas: HTMLCanvasElement): Renderer {
   }
   window.addEventListener('resize', onWindowResize);
   render()
-  return { scene, camera, orbit, canvas };
+  return { scene, camera, canvas };
 }
 
 class MetalMaterial {
@@ -155,12 +154,10 @@ class RenderSpace {
       if (mesh) {
         let m = mesh.clone();
         m.userData = instance;
-        // mesh matrix
         const translation = instance.trans();
         m.position.set(translation.x, translation.y, translation.z);
         const quat = instance.quat();
         m.quaternion.set(quat.i, quat.j, quat.k, quat.w);
-
         const type = instance.component_type();
         if (type == "Extrude") {
           const config = instance.instance_config();
@@ -179,8 +176,8 @@ class RenderSpace {
           // let panel_size = panel.size;
           // this.group.add(m);
         }
-
-        // panel size
+        // mesh matrix
+        
         this.group.add(m);
       } else {
         console.log("what? should never happend")
@@ -205,6 +202,25 @@ class Design {
       return;
     }
     this.design_space.push(add_extrude_instance(component, length));
+    this.update_render_space();
+  }
+
+  move_instance(instance: Instance, m: Matrix4) {
+    let translation = new Vector3();
+    let quaternion = new Quaternion();
+    m.decompose(translation, quaternion, new Vector3());
+    this.design_space.push(move_instance(
+      instance,
+      {
+        ...translation,
+      },
+      {
+        i: quaternion.x,
+        j: quaternion.y,
+        k: quaternion.z,
+        w: quaternion.w,
+      }
+    ));
     this.update_render_space();
   }
 
@@ -255,20 +271,45 @@ async function init_design(): Promise<Design> {
   return new Design(new DesignSpace(), render_space, component_lib);
 }
 
+interface Controls {
+  transform_control: TransformControls;
+  orbit_control: OrbitControls;
+}
+
 function init_canvas_controls(design: Design, renderer: Renderer) {
+  // orbit control
+  const orbit = new OrbitControls(renderer.camera, renderer.canvas);
+
   // transform control
   const control_tip = new Object3D();
   renderer.scene.add(control_tip);
   const control = new TransformControls(renderer.camera, renderer.canvas);
   control.attach(control_tip);
   control.setSpace("local");
-  control.addEventListener('mouseDown', () => renderer.orbit.enabled = false);
+  control.addEventListener('mouseDown', () => orbit.enabled = false);
   control.addEventListener('mouseUp', () => {
-    renderer.orbit.enabled = true;
+    orbit.enabled = true;
   });
-  control.addEventListener("objectChange", (c)=>{
-    console.log(control_tip.position);
+
+  let last_matrix = new Matrix4();
+  control.addEventListener("objectChange", () => {
+    handle_instance_move(last_matrix.invert().multiply(control_tip.matrix));
+    last_matrix.copy(control_tip.matrix);
   });
+
+  let instance: Instance | null = null;
+  let handle_instance_move = (m: Matrix4) => {
+    if (instance) {
+      design.move_instance(instance, m);
+    }
+  }
+  const bind_instance = (i: Instance) => {
+    instance = i;
+  }
+  const unbind_instance = () => {
+    instance = null;
+  }
+
   const hide_control = () => {
     control.enabled = false;
     control.visible = false;
@@ -276,7 +317,8 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
   hide_control();
   renderer.scene.add(control);
   const set_control_tip = (m: Matrix4) => {
-    m.decompose(control_tip.position, control_tip.quaternion, control_tip.scale);
+    last_matrix.copy(m);
+    m.decompose(control_tip.position, control_tip.quaternion, new Vector3());
     control.enabled = true;
     control.visible = true;
   };
@@ -284,20 +326,20 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
   // raycaster
   const raycaster = new Raycaster();
   const pointer = new Vector2();
-  let is_pointer_moved = false;
+  let pointer_move = 0;
   let is_mouse_down = false;
   window.addEventListener("mousedown", () => {
-    is_pointer_moved = false;
+    pointer_move = 0;
     is_mouse_down = true;
   })
-  window.addEventListener("mousemove", () => {
+  window.addEventListener("mousemove", (e) => {
     if (is_mouse_down) {
-      is_pointer_moved = true;
+      pointer_move += Math.abs(e.movementX) + Math.abs(e.movementY);
     }
   })
   window.addEventListener("mouseup", (event) => {
     is_mouse_down = false;
-    if (!is_pointer_moved) {
+    if (pointer_move < 5) {
       pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
       pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(pointer, renderer.camera);
@@ -305,13 +347,13 @@ function init_canvas_controls(design: Design, renderer: Renderer) {
       if (intersects.length > 0) {
         const intersect = intersects[0];
         set_control_tip(intersect.object.matrix);
+        bind_instance(intersect.object.userData as Instance);
       } else {
         hide_control();
+        unbind_instance();
       }
     }
   });
-
-
 }
 
 export default function Home() {
