@@ -22,7 +22,7 @@ pub trait Operation {
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AddInstance {
-    instance: Instance,
+    pub(crate) instance: Instance,
 }
 
 impl AddInstance {
@@ -49,11 +49,11 @@ impl Operation for AddInstance {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        target.instances.push(self.instance.clone());
+        target.instances.insert(self.instance.id, self.instance.clone());
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
-        target.instances.retain(|i| i.id != self.instance.id);
+        target.instances.remove(&self.instance.id);
     }
 
     fn compress(&mut self, _target: &Self) -> bool {
@@ -72,18 +72,15 @@ impl Operation for RemoveInstance {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        // find the instance by id,
-        // save it to cache, and remove it from instances
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            let instance = target.instances.remove(index);
-            self.removed_instance.replace(instance);
+        let removed_instance = target.instances.remove(&self.id);
+        if let Some(removed_instance) = removed_instance {
+            self.removed_instance.replace(removed_instance);
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
         if let Some(instance) = self.removed_instance.take() {
-            target.instances.push(instance);
+            target.instances.entry(instance.id).or_insert(instance);
         }
     }
 
@@ -104,9 +101,9 @@ impl Operation for PostProcessInstance {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            let config = match (self.config.clone(), &target.instances[index].config) {
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            let config = match (self.config.clone(), &instance.config) {
                 (InstanceConfig::Extrude(mut e), InstanceConfig::Extrude(target_e)) => {
                     e.length = target_e.length;
                     InstanceConfig::Extrude(e)
@@ -115,15 +112,15 @@ impl Operation for PostProcessInstance {
             };
             // cache the old config
             self.config_cache
-                .replace(target.instances[index].config.clone());
-            target.instances[index].config = config;
+                .replace(instance.config.clone());
+            instance.config = config;
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            target.instances[index].config = self.config_cache.take().unwrap();
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            instance.config = self.config_cache.take().unwrap();
         }
     }
 
@@ -137,28 +134,30 @@ impl Operation for PostProcessInstance {
 pub struct ExtrudeAddLength {
     pub(crate) id: Uuid,
     pub(crate) dlength: i32,
-    pub(crate) matrix: Isometry3<f32>,
+    pub(crate) new_matrix: Isometry3<f32>,
+    pub(crate) old_matrix: Option<Isometry3<f32>>,
 }
 
 impl Operation for ExtrudeAddLength {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            if let InstanceConfig::Extrude(e) = &mut target.instances[index].config {
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            if let InstanceConfig::Extrude(e) = &mut instance.config {
                 e.length = ((e.length as i32) + self.dlength) as u32;
-                target.instances[index].matrix *= self.matrix;
+                self.old_matrix.replace(instance.matrix);
+                instance.matrix = self.new_matrix;
             }
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            if let InstanceConfig::Extrude(e) = &mut target.instances[index].config {
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            if let InstanceConfig::Extrude(e) = &mut instance.config {
                 e.length = ((e.length as i32) - self.dlength) as u32;
-                target.instances[index].matrix *= self.matrix.inverse();
+                instance.matrix = self.old_matrix.unwrap();
             }
         }
     }
@@ -176,31 +175,33 @@ pub struct PanelAddSize {
     pub(crate) dwidth: i32,
     pub(crate) dheight: i32,
     pub(crate) dthickness: i32,
-    pub(crate) matrix: Isometry3<f32>,
+    pub(crate) new_matrix: Isometry3<f32>,
+    pub(crate) old_matrix: Option<Isometry3<f32>>,
 }
 
 impl Operation for PanelAddSize {
     type Target = DesignSpace;
     fn operate(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            if let InstanceConfig::Panel(p) = &mut target.instances[index].config {
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            if let InstanceConfig::Panel(p) = &mut instance.config {
                 p.width = ((p.width as i32) + self.dwidth) as u32;
                 p.height = ((p.height as i32) + self.dheight) as u32;
                 p.thickness = ((p.thickness as i32) + self.dthickness) as u32;
-                target.instances[index].matrix *= self.matrix;
+                self.old_matrix.replace(instance.matrix);
+                instance.matrix = self.new_matrix;
             }
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            if let InstanceConfig::Panel(p) = &mut target.instances[index].config {
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            if let InstanceConfig::Panel(p) = &mut instance.config {
                 p.width = ((p.width as i32) - self.dwidth) as u32;
                 p.height = ((p.height as i32) - self.dheight) as u32;
                 p.thickness = ((p.thickness as i32) - self.dthickness) as u32;
-                target.instances[index].matrix *= self.matrix.inverse();
+                instance.matrix = self.old_matrix.unwrap();
             }
         }
     }
@@ -209,6 +210,7 @@ impl Operation for PanelAddSize {
         self.dwidth += target.dwidth;
         self.dheight += target.dheight;
         self.dthickness += target.dthickness;
+        self.new_matrix *= target.new_matrix;
         true
     }
 }
@@ -217,28 +219,30 @@ impl Operation for PanelAddSize {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MoveInstance {
     pub(crate) id: Uuid,
-    pub(crate) matrix: Isometry3<f32>,
+    pub(crate) new_matrix: Isometry3<f32>,
+    pub(crate) old_matrix: Option<Isometry3<f32>>,
 }
 
 impl Operation for MoveInstance {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            target.instances[index].matrix *= self.matrix;
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            self.old_matrix.replace(instance.matrix);
+            instance.matrix = self.new_matrix;
         }
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
-        let index = target.instances.iter().position(|i| i.id == self.id);
-        if let Some(index) = index {
-            target.instances[index].matrix *= self.matrix.inverse();
+        let instance = target.instances.get_mut(&self.id);
+        if let Some(instance) = instance {
+            instance.matrix = self.old_matrix.unwrap();
         }
     }
 
     fn compress(&mut self, target: &Self) -> bool {
-        self.matrix *= target.matrix;
+        self.new_matrix *= target.new_matrix;
         true
     }
 }
@@ -378,12 +382,13 @@ pub fn extrude_add_length(
     DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
         id: instance.id,
         dlength: d_length,
-        matrix: nalgebra::Isometry3::from_parts(
+        new_matrix: nalgebra::Isometry3::from_parts(
             nalgebra::Translation3::new(tra.x, tra.y, tra.z),
             nalgebra::UnitQuaternion::new_normalize(nalgebra::Quaternion::new(
                 quat.w, quat.i, quat.j, quat.k,
             )),
         ),
+        old_matrix: None,
     })
 }
 
@@ -401,12 +406,13 @@ pub fn panel_add_size(
         dwidth,
         dheight,
         dthickness,
-        matrix: nalgebra::Isometry3::from_parts(
+        new_matrix: nalgebra::Isometry3::from_parts(
             nalgebra::Translation3::new(tra.x, tra.y, tra.z),
             nalgebra::UnitQuaternion::new_normalize(nalgebra::Quaternion::new(
                 quat.w, quat.i, quat.j, quat.k,
             )),
         ),
+        old_matrix: None,
     })
 }
 
@@ -414,12 +420,13 @@ pub fn panel_add_size(
 pub fn move_instance(instance: &Instance, tra: Translation, quat: Quaternion) -> DesignOperation {
     DesignOperation::MoveInstance(MoveInstance {
         id: instance.id,
-        matrix: nalgebra::Isometry3::from_parts(
+        new_matrix: nalgebra::Isometry3::from_parts(
             nalgebra::Translation3::new(tra.x, tra.y, tra.z),
             nalgebra::UnitQuaternion::new_normalize(nalgebra::Quaternion::new(
                 quat.w, quat.i, quat.j, quat.k,
             )),
         ),
+        old_matrix: None,
     })
 }
 
@@ -573,7 +580,7 @@ mod test {
         if let DesignOperation::ExtrudeAddLength(op) = op {
             assert_eq!(op.id, instance.id);
             assert_eq!(op.dlength, 1000);
-            assert_eq!(op.matrix, Isometry3::identity());
+            assert_eq!(op.new_matrix, Isometry3::identity());
         } else {
             panic!("invalid operation type");
         }
@@ -605,7 +612,7 @@ mod test {
             assert_eq!(op.dwidth, 100);
             assert_eq!(op.dheight, 100);
             assert_eq!(op.dthickness, 10);
-            assert_eq!(op.matrix, Isometry3::identity());
+            assert_eq!(op.new_matrix, Isometry3::identity());
         } else {
             panic!("invalid operation type");
         }
@@ -624,14 +631,10 @@ mod test {
                 thickness: 100,
             }),
         };
-        let op = move_instance(
-            &instance,
-            Translation::identity(),
-            Quaternion::identity(),
-        );
+        let op = move_instance(&instance, Translation::identity(), Quaternion::identity());
         if let DesignOperation::MoveInstance(op) = op {
             assert_eq!(op.id, instance.id);
-            assert_eq!(op.matrix, Isometry3::identity());
+            assert_eq!(op.new_matrix, Isometry3::identity());
         } else {
             panic!("invalid operation type");
         }
