@@ -3,6 +3,7 @@ import { AxesHelper, Color, DirectionalLight, GridHelper, PerspectiveCamera, Sce
 export interface Renderer {
     camera: PerspectiveCamera;
     canvas: HTMLCanvasElement;
+    renderer: WebGLRenderer;
     scene: Scene;
 }
 
@@ -60,9 +61,9 @@ export function setup_threejs(canvas: HTMLCanvasElement): Renderer {
     // scene.add(ground);
 
     // helper
-    const axesHelper = new AxesHelper(1);
-    scene.add(axesHelper);
-    const gridHelper = new GridHelper(10, 10, 0x888888, 0x444444);
+    // const axesHelper = new AxesHelper(1);
+    // scene.add(axesHelper);
+    const gridHelper = new GridHelper(2, 20, 0x888888, 0x444444);
     scene.add(gridHelper);
 
     // render loop
@@ -79,5 +80,5 @@ export function setup_threejs(canvas: HTMLCanvasElement): Renderer {
     }
     window.addEventListener('resize', onWindowResize);
     render()
-    return { scene, camera, canvas };
+    return { scene, camera, renderer, canvas };
 }

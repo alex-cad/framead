@@ -4,13 +4,15 @@ import { Renderer } from "./setup_threejs";
 import { Design } from "./design";
 import { Object3D, Matrix4, Vector3, Mesh, Raycaster, Vector2 } from "three";
 import { Instance } from "framead";
+import { ViewportGizmo } from "./viewportgizmo/ViewportGizmo";
+import { Atom, atom } from "jotai";
 
 export interface Controls {
     transform_control: TransformControls;
     orbit_control: OrbitControls;
 }
 
-export class DesignControls implements Controls {
+export class DesignControls extends EventTarget implements Controls {
     transform_control: TransformControls;
     control_tip: Object3D;
     orbit_control: OrbitControls;
@@ -20,6 +22,7 @@ export class DesignControls implements Controls {
     mesh: Mesh | null = null;
     last_matrix = new Matrix4();
     constructor(design: Design, renderer: Renderer) {
+        super();
         this.design = design;
         this.renderer = renderer;
         // orbit control
@@ -57,7 +60,6 @@ export class DesignControls implements Controls {
                 if (mesh) {
                     this.bind(mesh);
                 } else {
-                    this.hide_control();
                     this.unbind();
                 }
             }
@@ -70,31 +72,50 @@ export class DesignControls implements Controls {
             }
             this.last_matrix.copy(this.control_tip.matrix);
         });
+
+        const viewportGizmo = new ViewportGizmo(this.renderer.camera, this.renderer.renderer, {
+            container: document.body,
+        });
+        viewportGizmo.target = this.orbit_control.target;
+        viewportGizmo.addEventListener("start", () => (this.orbit_control.enabled = false));
+        viewportGizmo.addEventListener("end", () => (this.orbit_control.enabled = true));
+
+        this.orbit_control.addEventListener("change", () => {
+            viewportGizmo.update();
+        });
+
+        function animate() {
+            viewportGizmo.render();
+            requestAnimationFrame(animate);
+        }
+        animate();
     }
 
-    bind(mesh: Mesh) {
-        this.mesh = mesh;
+    bind(mesh: Mesh | string) {
+        this.mesh = typeof mesh === "string" ? this.design.render_space.instance_meshs.get(mesh) as Mesh : mesh;
         this.mesh.matrix.decompose(this.control_tip.position, this.control_tip.quaternion, new Vector3());
         this.last_matrix.copy(this.control_tip.matrix);
         this.show_control();
+        this.dispatchEvent(new CustomEvent("bind", { detail: this }));
     }
 
     unbind() {
         this.mesh = null;
         this.hide_control();
+        this.dispatchEvent(new CustomEvent("unbind", { detail: this }));
     }
 
-    hide_control() {
+    private hide_control() {
         this.transform_control.enabled = false;
         this.transform_control.visible = false;
     }
 
-    show_control() {
+    private show_control() {
         this.transform_control.enabled = true;
         this.transform_control.visible = true;
     }
 
-    pick_instance_mesh(event: MouseEvent) {
+    private pick_instance_mesh(event: MouseEvent) {
         const pointer = new Vector2();
         pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
         pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
@@ -105,92 +126,4 @@ export class DesignControls implements Controls {
             return intersect.object as Mesh;
         }
     }
-}
-
-export function init_canvas_controls(design: Design, renderer: Renderer) {
-    // orbit control
-    const orbit = new OrbitControls(renderer.camera, renderer.canvas);
-
-    // transform control
-    const control_tip = new Object3D();
-    renderer.scene.add(control_tip);
-    const control = new TransformControls(renderer.camera, renderer.canvas);
-    control.attach(control_tip);
-    control.setSpace("local");
-    control.addEventListener('mouseDown', () => orbit.enabled = false);
-    control.addEventListener('mouseUp', () => {
-        orbit.enabled = true;
-    });
-
-    let last_matrix = new Matrix4();
-    control.addEventListener("objectChange", () => {
-        if (instance_mesh) {
-            control_tip.matrix.decompose(instance_mesh.position, instance_mesh.quaternion, new Vector3());
-        }
-
-        handle_instance_move(last_matrix.invert().multiply(control_tip.matrix));
-        last_matrix.copy(control_tip.matrix);
-    });
-
-    let instance: Instance | null = null;
-    let instance_mesh: Mesh | null = null;
-    let handle_instance_move = (m: Matrix4) => {
-        if (instance) {
-            design.move_instance(instance, m);
-        }
-    }
-    const bind_instance = (i: Instance, mesh: Mesh) => {
-        instance = i;
-        instance_mesh = mesh;
-    }
-    const unbind_instance = () => {
-        instance = null;
-        instance_mesh = null;
-    }
-
-    const hide_control = () => {
-        control.enabled = false;
-        control.visible = false;
-    }
-    hide_control();
-    renderer.scene.add(control);
-    const set_control_tip = (m: Matrix4) => {
-        last_matrix.copy(m);
-        m.decompose(control_tip.position, control_tip.quaternion, new Vector3());
-        control.enabled = true;
-        control.visible = true;
-    };
-
-    // raycaster
-    const raycaster = new Raycaster();
-    const pointer = new Vector2();
-    let pointer_move = 0;
-    let is_mouse_down = false;
-    window.addEventListener("mousedown", () => {
-        pointer_move = 0;
-        is_mouse_down = true;
-    })
-    window.addEventListener("mousemove", (e) => {
-        if (is_mouse_down) {
-            pointer_move += Math.abs(e.movementX) + Math.abs(e.movementY);
-        }
-    })
-    renderer.canvas.addEventListener("mouseup", (event) => {
-        is_mouse_down = false;
-        if (pointer_move < 5) {
-            pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-            pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(pointer, renderer.camera);
-            const intersects = raycaster.intersectObjects(design.render_space.group.children);
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                set_control_tip(intersect.object.matrix);
-                bind_instance(intersect.object.userData as Instance, intersect.object as Mesh);
-            } else {
-                hide_control();
-                unbind_instance();
-            }
-        }
-    });
-    return { transform_control: control, orbit_control: orbit };
 }

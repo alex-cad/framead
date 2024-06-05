@@ -1,4 +1,4 @@
-import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, add_extrude_instance, move_instance } from "framead";
+import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, add_extrude_instance, move_instance, remove_instance, add_normal_instance, add_panel_instance, extrude_post_process, extrude_add_length, panel_add_size } from "framead";
 import { MetalMaterial } from "./materials";
 import { Vector3, Group, Material, Mesh, Matrix4, Quaternion } from "three";
 import { STLLoader } from "three/examples/jsm/Addons.js";
@@ -158,6 +158,77 @@ export class Design {
         this.rebuild_render_space();
     }
 
+    add_normal_instance(label: string) {
+        let component = this.component_lib.get_component(label)?.config_data;
+        if (!component) {
+            return;
+        }
+        this.design_space.push(add_normal_instance(component));
+        this.rebuild_render_space();
+    }
+
+    add_panel(label: string, width: number, height: number, thickness: number) {
+        let component = this.component_lib.get_component(label)?.config_data;
+        if (!component) {
+            return;
+        }
+        this.design_space.push(add_panel_instance(component, width, height, thickness));
+        this.rebuild_render_space();
+    }
+
+    remove_instance(instance: Instance) {
+        this.design_space.push(remove_instance(instance));
+        this.rebuild_render_space();
+    }
+
+    extrude_post_process(instance: Instance, config: ExtrudeConfig) {
+        let component = this.component_lib.get_component(instance.label())?.config_data;
+        if (!component) {
+            return;
+        }
+        this.design_space.push(extrude_post_process(instance, component, config));
+        this.rebuild_render_space();
+    }
+
+    extrude_add_length(instance: Instance, dlength: number, m: Matrix4) {
+        let translation = new Vector3();
+        let quaternion = new Quaternion();
+        m.decompose(translation, quaternion, new Vector3());
+        this.design_space.push(extrude_add_length(
+            instance, dlength,
+            {
+                ...translation,
+            },
+            {
+                i: quaternion.x,
+                j: quaternion.y,
+                k: quaternion.z,
+                w: quaternion.w,
+            }
+        )
+        );
+        this.rebuild_render_space();
+    }
+
+    panel_add_size(instance: Instance, dwidth: number, dheight: number, dthickness: number, m: Matrix4) {
+        let translation = new Vector3();
+        let quaternion = new Quaternion();
+        m.decompose(translation, quaternion, new Vector3());
+        this.design_space.push(panel_add_size(
+            instance, dwidth, dheight, dthickness,
+            {
+                ...translation,
+            },
+            {
+                i: quaternion.x,
+                j: quaternion.y,
+                k: quaternion.z,
+                w: quaternion.w,
+            }
+        )
+        );
+    }
+
     move_instance(instance: Instance, m: Matrix4) {
         let translation = new Vector3();
         let quaternion = new Quaternion();
@@ -186,9 +257,10 @@ export async function init_design(): Promise<Design> {
     const metal_material = new MetalMaterial();
     await metal_material.init_env_map();
     await wasm_init();
+
     const component_lib = new ComponentLib();
     let misumi = new Vender("misumi");
-    let c = new Component("LCF8-4040", "LCF8-4040", {
+    let lcf8 = new Component("LCF8-4040", "LCF8-4040", {
         Extrude: {
             standard: {
                 series: { S40: "SlotDepth12_3mm" },
@@ -216,10 +288,18 @@ export async function init_design(): Promise<Design> {
         }
     }, misumi);
     component_lib.set_component("LCF8-4040", {
-        config_data: c,
+        config_data: lcf8,
         mesh_url: "./LCF8-4040-Meter-Low.stl",
         material: metal_material.material,
     });
+    // let footer = new Component("C-FMJ60-N", "C-FMJ60-N", {
+    //     Floor: { Wheel: { Fuma: "_60F" } }
+    // }, misumi);
+    // component_lib.set_component("C-FMJ60-N", {
+    //     config_data: footer,
+    //     mesh_url: "./C-FMJ60-N-Meter-Low.stl",
+    //     material: metal_material.material,
+    // });
     const render_space = new RenderSpace(component_lib);
     return new Design(new DesignSpace(), render_space, component_lib);
 }

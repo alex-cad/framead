@@ -1,6 +1,6 @@
 "use client"
 
-import wasm_init from "framead";
+import wasm_init, { Instance } from "framead";
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { setup_threejs } from "./lib/setup_threejs";
 import { init_design, Design } from "./lib/design";
@@ -14,6 +14,7 @@ export default function Home() {
   const controls = useRef<DesignControls | null>(null);
 
   const [instances, setInstances] = useState<{ name: string, id: string }[]>([]);
+  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
 
   useEffect(() => {
     if (!initialized.current && canvas_ref.current) {
@@ -23,6 +24,12 @@ export default function Home() {
         design.current = init_design;
         renderer.scene.add(init_design.render_space.group);
         controls.current = new DesignControls(init_design, renderer);
+        controls.current.addEventListener("bind", (e) => {
+          setSelectedInstance(((e.currentTarget as DesignControls).mesh?.userData as Instance))
+        })
+        controls.current.addEventListener("unbind", (e) => {
+          setSelectedInstance(null)
+        })
       });
     }
   }, []);
@@ -34,8 +41,19 @@ export default function Home() {
         name: instance.label(),
         id: instance.id(),
       }
-    }
-    ) ?? []);
+    }) ?? []);
+  }
+
+  const handleRemoveComponent = () => {
+    setSelectedInstance(null);
+    controls.current?.unbind();
+    design.current?.remove_instance(selectedInstance!);
+    setInstances(design.current?.design_space.get_instances().map((instance) => {
+      return {
+        name: instance.label(),
+        id: instance.id(),
+      }
+    }) ?? []);
   }
 
   const handleRotationControlMode = (e: MouseEvent) => {
@@ -52,16 +70,24 @@ export default function Home() {
     <div>
       <canvas ref={canvas_ref}></canvas>
       <div className="absolute top-0 left-0 z-10">
-        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加零件</button>
-        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加铝型材</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加地脚</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加面板</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleTranslationControlMode} >移动控制模式</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
 
-        <div className="p-2 m-2 bg-slate-50">
+
+        <div className={(instances.length === 0 ? "hidden" : "") + "p-2 m-2 bg-slate-50"}>
           {
             instances.map((instance, index) => (
-              <div key={index}>{instance.name} {instance.id}</div>
+              <button key={index} onClick={() => {
+                controls.current?.bind(instance.id);
+              }}>{instance.name} {instance.id}</button>
             ))
           }
+        </div>
+        <div className={(selectedInstance === null ? `hidden` : ``) + ""}>
+          <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRemoveComponent}>删除{selectedInstance?.id()}</button>
         </div>
       </div>
     </div>
