@@ -34,8 +34,18 @@ export default function Home() {
     }
   }, []);
 
-  const handleAddComponent = () => {
+  const handleAddExtrude = () => {
     design.current?.add_extrude("LCF8-4040", 100000);
+    setInstances(design.current?.design_space.get_instances().map((instance) => {
+      return {
+        name: instance.label(),
+        id: instance.id(),
+      }
+    }) ?? []);
+  }
+
+  const handleAddFooter = () => {
+    design.current?.add_normal_instance("C-FMJ60-N");
     setInstances(design.current?.design_space.get_instances().map((instance) => {
       return {
         name: instance.label(),
@@ -70,9 +80,9 @@ export default function Home() {
     <div>
       <canvas ref={canvas_ref}></canvas>
       <div className="absolute top-0 left-0 z-10">
-        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加铝型材</button>
-        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加地脚</button>
-        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加面板</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddExtrude} >添加铝型材</button>
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddFooter} >添加地脚</button>
+        {/* <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加面板</button> */}
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleTranslationControlMode} >移动控制模式</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
 
@@ -80,9 +90,11 @@ export default function Home() {
         <div className={(instances.length === 0 ? "hidden" : "") + "p-2 m-2 bg-slate-50"}>
           {
             instances.map((instance, index) => (
-              <button key={index} onClick={() => {
+              <div key={index}>
+                <button onClick={() => {
                 controls.current?.bind(instance.id);
               }}>{instance.name} {instance.id}</button>
+              </div>
             ))
           }
         </div>

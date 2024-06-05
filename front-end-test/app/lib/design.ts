@@ -1,5 +1,5 @@
-import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, add_extrude_instance, move_instance, remove_instance, add_normal_instance, add_panel_instance, extrude_post_process, extrude_add_length, panel_add_size } from "framead";
-import { MetalMaterial } from "./materials";
+import wasm_init, { DesignSpace, Component, Vender, Instance, ExtrudeConfig, PanelConfig, add_extrude_instance, move_instance, remove_instance, add_normal_instance, add_panel_instance, extrude_post_process, extrude_add_length, panel_add_size, misumi_4040_extrude } from "framead";
+import { MaterialLib } from "./materials";
 import { Vector3, Group, Material, Mesh, Matrix4, Quaternion } from "three";
 import { STLLoader } from "three/examples/jsm/Addons.js";
 
@@ -245,7 +245,7 @@ export class Design {
                 w: quaternion.w,
             }
         ));
-        this.rebuild_render_space();
+        // this.rebuild_render_space();
     }
 
     rebuild_render_space() {
@@ -254,52 +254,22 @@ export class Design {
 }
 
 export async function init_design(): Promise<Design> {
-    const metal_material = new MetalMaterial();
-    await metal_material.init_env_map();
-    await wasm_init();
-
+    const material_lib = new MaterialLib();
+    await material_lib.init();
     const component_lib = new ComponentLib();
-    let misumi = new Vender("misumi");
-    let lcf8 = new Component("LCF8-4040", "LCF8-4040", {
-        Extrude: {
-            standard: {
-                series: { S40: "SlotDepth12_3mm" },
-                metarial: "_6063T5",
-                surface: "AA10",
-            },
-            shape: {
-                name: "LCF8-4040",
-                shape: { Square: "FourSlot" },
-                holes_count: 1,
-            },
-            post_process: {
-                drill: "M8_25mm",
-                bevel_cut: true,
-                wrench_hole: true,
-                wrench_hole_size: 7,
-                counterbore: true,
-                counterbore_size: "Z8",
-                length: {
-                    min: 5000,
-                    max: 400000,
-                    step: 50,
-                },
-            },
-        }
-    }, misumi);
     component_lib.set_component("LCF8-4040", {
-        config_data: lcf8,
+        config_data: misumi_4040_extrude("LCF8-4040", "LCF8-4040", new Vender("misumi")),
         mesh_url: "./LCF8-4040-Meter-Low.stl",
-        material: metal_material.material,
+        material: material_lib.material_map.get("metal")!,
     });
-    // let footer = new Component("C-FMJ60-N", "C-FMJ60-N", {
-    //     Floor: { Wheel: { Fuma: "_60F" } }
-    // }, misumi);
-    // component_lib.set_component("C-FMJ60-N", {
-    //     config_data: footer,
-    //     mesh_url: "./C-FMJ60-N-Meter-Low.stl",
-    //     material: metal_material.material,
-    // });
+    let footer = new Component("C-FMJ60-N", "C-FMJ60-N", {
+        Floor: { Wheel: { Fuma: "_60F" } }
+    }, new Vender("misumi"));
+    component_lib.set_component("C-FMJ60-N", {
+        config_data: footer,
+        mesh_url: "./C-FMJ60-N-Meter-Low.stl",
+        material: material_lib.material_map.get("wheel_footer")!,
+    });
     const render_space = new RenderSpace(component_lib);
     return new Design(new DesignSpace(), render_space, component_lib);
 }

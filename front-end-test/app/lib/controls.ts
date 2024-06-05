@@ -67,7 +67,7 @@ export class DesignControls extends EventTarget implements Controls {
 
         this.transform_control.addEventListener("objectChange", () => {
             if (this.mesh) {
-                // this.control_tip.matrix.decompose(this.mesh.position, this.mesh.quaternion, new Vector3());
+                this.control_tip.matrix.decompose(this.mesh.position, this.mesh.quaternion, new Vector3());
                 this.design.move_instance(this.mesh.userData as Instance, this.last_matrix.invert().multiply(this.control_tip.matrix));
             }
             this.last_matrix.copy(this.control_tip.matrix);

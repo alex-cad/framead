@@ -108,6 +108,146 @@ impl Component {
     }
 }
 
+#[wasm_bindgen]
+pub fn misumi_4040_extrude(label: String, name: String, vendor: Vender) -> Component {
+    let config_data = ComponentData::Extrude(ExtrudeData {
+        standard: ExtrudeStandard {
+            series: ExtrudeSeries::S40(S40ExtrudeSlotDepth::SlotDepth12_3mm),
+            metarial: Metarial::_6063T5,
+            surface: ExtrudeSurface::AA10,
+        },
+        shape: ExtrudeShape {
+            name: "LCF8-4040".into(),
+            shape: ExtrudeShapeEnum::Square(ExtrudeSquareShape::FourSlot),
+            holes_count: 1,
+        },
+        post_process: ExtrudePostProcess {
+            drill: Drill::M8_25mm,
+            bevel_cut: true,
+            wrench_hole: true,
+            wrench_hole_size: 7,
+            counterbore: true,
+            counterbore_size: CounterboreSize::Z8,
+            length: ExtrudeLength {
+                min: 5000,
+                max: 400000,
+                step: 50,
+            },
+        },
+    });
+    Component {
+        label,
+        name,
+        data: config_data,
+        vendor,
+    }
+}
+
+#[wasm_bindgen]
+pub fn misumi_4080_extrude(label: String, name: String, vendor: Vender) -> Component {
+    let config_data = ComponentData::Extrude(ExtrudeData {
+        standard: ExtrudeStandard {
+            series: ExtrudeSeries::S40(S40ExtrudeSlotDepth::SlotDepth12_3mm),
+            metarial: Metarial::_6063T5,
+            surface: ExtrudeSurface::AA10,
+        },
+        shape: ExtrudeShape {
+            name: "LCF8-4040".into(),
+            shape: ExtrudeShapeEnum::Rect(2, ExtrudeRectShape::FourSlot),
+            holes_count: 1,
+        },
+        post_process: ExtrudePostProcess {
+            drill: Drill::M8_25mm,
+            bevel_cut: true,
+            wrench_hole: true,
+            wrench_hole_size: 7,
+            counterbore: true,
+            counterbore_size: CounterboreSize::Z8,
+            length: ExtrudeLength {
+                min: 5000,
+                max: 400000,
+                step: 50,
+            },
+        },
+    });
+    Component {
+        label,
+        name,
+        data: config_data,
+        vendor,
+    }
+}
+
+#[wasm_bindgen]
+pub fn misumi_40120_extrude(label: String, name: String, vendor: Vender) -> Component {
+    let config_data = ComponentData::Extrude(ExtrudeData {
+        standard: ExtrudeStandard {
+            series: ExtrudeSeries::S40(S40ExtrudeSlotDepth::SlotDepth12_3mm),
+            metarial: Metarial::_6063T5,
+            surface: ExtrudeSurface::AA10,
+        },
+        shape: ExtrudeShape {
+            name: "LCF8-4040".into(),
+            shape: ExtrudeShapeEnum::Rect(3, ExtrudeRectShape::FourSlot),
+            holes_count: 1,
+        },
+        post_process: ExtrudePostProcess {
+            drill: Drill::M8_25mm,
+            bevel_cut: true,
+            wrench_hole: true,
+            wrench_hole_size: 7,
+            counterbore: true,
+            counterbore_size: CounterboreSize::Z8,
+            length: ExtrudeLength {
+                min: 5000,
+                max: 400000,
+                step: 50,
+            },
+        },
+    });
+    Component {
+        label,
+        name,
+        data: config_data,
+        vendor,
+    }
+}
+
+#[wasm_bindgen]
+pub fn misumi_40160_extrude(label: String, name: String, vendor: Vender) -> Component {
+    let config_data = ComponentData::Extrude(ExtrudeData {
+        standard: ExtrudeStandard {
+            series: ExtrudeSeries::S40(S40ExtrudeSlotDepth::SlotDepth12_3mm),
+            metarial: Metarial::_6063T5,
+            surface: ExtrudeSurface::AA10,
+        },
+        shape: ExtrudeShape {
+            name: "LCF8-4040".into(),
+            shape: ExtrudeShapeEnum::Rect(4, ExtrudeRectShape::FourSlot),
+            holes_count: 1,
+        },
+        post_process: ExtrudePostProcess {
+            drill: Drill::M8_25mm,
+            bevel_cut: true,
+            wrench_hole: true,
+            wrench_hole_size: 7,
+            counterbore: true,
+            counterbore_size: CounterboreSize::Z8,
+            length: ExtrudeLength {
+                min: 5000,
+                max: 400000,
+                step: 50,
+            },
+        },
+    });
+    Component {
+        label,
+        name,
+        data: config_data,
+        vendor,
+    }
+}
+
 // #[wasm_bindgen]
 pub struct ComponentLib {
     pub(crate) components: HashMap<String, Component>,
