@@ -1,4 +1,7 @@
 mod operation;
+use std::collections::HashMap;
+
+use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::instance::Instance;
@@ -19,7 +22,7 @@ trait Record {
 #[wasm_bindgen]
 #[derive(Debug)]
 pub struct DesignSpace {
-    instances: Vec<Instance>,
+    instances: HashMap<Uuid, Instance>,
     // constraints: Vec<ConstraintSystem>,
     records: Vec<DesignOperation>,
 
@@ -31,14 +34,14 @@ impl DesignSpace {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         DesignSpace {
-            instances: Vec::new(),
+            instances: HashMap::new(),
             records: Vec::new(),
             poped: Vec::new(),
         }
     }
 
     pub fn get_instances(&self) -> Vec<Instance> {
-        self.instances.clone()
+        self.instances.values().cloned().collect()
     }
 }
 
@@ -98,7 +101,8 @@ impl DesignSpace {
 mod test {
     use crate::{
         component::ComponentLib,
-        instance::{ExtrudeConfig, InstanceConfig}, log,
+        instance::{ExtrudeConfig, InstanceConfig},
+        log,
         // log,
     };
 
@@ -150,8 +154,8 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        let id = design.instances[0].id;
 
         let remove = RemoveInstance {
             id,
@@ -169,8 +173,8 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        let id = design.instances[0].id;
 
         let remove = RemoveInstance {
             id,
@@ -195,9 +199,10 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PostProcessInstance(PostProcessInstance {
-            id: design.instances[0].id,
+            id,
             config: InstanceConfig::Extrude(ExtrudeConfig {
                 drill_left: true,
                 drill_right: false,
@@ -219,9 +224,10 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PostProcessInstance(PostProcessInstance {
-            id: design.instances[0].id,
+            id,
             config: InstanceConfig::Extrude(ExtrudeConfig {
                 drill_left: true,
                 drill_right: false,
@@ -246,18 +252,22 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
-            id: design.instances[0].id,
+            id,
             dlength: 100000,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
+        // log(&format!("ExtrudeAddLength \n {:#?}", design));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
-            id: design.instances[0].id,
+            id,
             dlength: -100000,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
+            old_matrix: None,
         }));
-        // log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength \n {:#?}", design));
     }
 
     #[wasm_bindgen_test]
@@ -266,16 +276,18 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
-            id: design.instances[0].id,
+            id,
             dlength: 100000,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         design.pop();
-        log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength {:#?}", design));
         design.repush();
-        log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength {:#?}", design));
     }
 
     #[wasm_bindgen_test]
@@ -284,16 +296,19 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
-            id: design.instances[0].id,
+            id,
             dlength: 100000,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
-            id: design.instances[0].id,
+            id,
             dlength: 100000,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         // log(&format!("{:#?}", design));
     }
@@ -304,10 +319,12 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::MoveInstance(MoveInstance {
-            id: design.instances[0].id,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            id,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         // log(&format!("{:#?}", design));
     }
@@ -318,10 +335,12 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::MoveInstance(MoveInstance {
-            id: design.instances[0].id,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            id,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         design.pop();
         // log(&format!("{:#?}", design));
@@ -335,14 +354,17 @@ mod test {
         let mut design = DesignSpace::new();
 
         let add = AddInstance::extrude(lib.components.get("LCF8-4040").unwrap(), 100000).unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::MoveInstance(MoveInstance {
-            id: design.instances[0].id,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            id,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         design.push(DesignOperation::MoveInstance(MoveInstance {
-            id: design.instances[0].id,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            id,
+            new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
+            old_matrix: None,
         }));
         // log(&format!("{:#?}", design));
     }
@@ -359,13 +381,16 @@ mod test {
             2000,
         )
         .unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
-        //     id: design.instances[0].id,
-        //     dwidth: 100,
-        //     dheight: 100,
-        //     dthickness: 10,
-        // }));
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
+            id,
+            dwidth: 100,
+            dheight: 100,
+            dthickness: 10,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
+        }));
         // log(&format!("{:#?}", design));
     }
 
@@ -381,13 +406,16 @@ mod test {
             2000,
         )
         .unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
-        //     id: design.instances[0].id,
-        //     dwidth: 100,
-        //     dheight: 100,
-        //     dthickness: 10,
-        // }));
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
+            id,
+            dwidth: 100,
+            dheight: 100,
+            dthickness: 10,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
+        }));
         design.pop();
         // log(&format!("{:#?}", design));
         design.repush();
@@ -406,21 +434,24 @@ mod test {
             2000,
         )
         .unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
-            id: design.instances[0].id,
+            id,
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
         }));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
-            id: design.instances[0].id,
+            id,
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
-            matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
+            old_matrix: None,
         }));
-        // log(&format!("{:#?}", design));
+        log(&format!("{:#?}", design));
     }
 }
