@@ -164,6 +164,7 @@ impl Operation for ExtrudeAddLength {
 
     fn compress(&mut self, target: &Self) -> bool {
         self.dlength += target.dlength;
+        self.new_matrix = target.new_matrix;
         true
     }
 }
@@ -210,7 +211,7 @@ impl Operation for PanelAddSize {
         self.dwidth += target.dwidth;
         self.dheight += target.dheight;
         self.dthickness += target.dthickness;
-        self.new_matrix *= target.new_matrix;
+        self.new_matrix = target.new_matrix;
         true
     }
 }
@@ -242,7 +243,7 @@ impl Operation for MoveInstance {
     }
 
     fn compress(&mut self, target: &Self) -> bool {
-        self.new_matrix *= target.new_matrix;
+        self.new_matrix = target.new_matrix;
         true
     }
 }

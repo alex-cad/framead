@@ -260,13 +260,14 @@ mod test {
             new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
             old_matrix: None,
         }));
+        // log(&format!("ExtrudeAddLength \n {:#?}", design));
         design.push(DesignOperation::ExtrudeAddLength(ExtrudeAddLength {
             id,
             dlength: -100000,
             new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
             old_matrix: None,
         }));
-        // log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength \n {:#?}", design));
     }
 
     #[wasm_bindgen_test]
@@ -284,9 +285,9 @@ mod test {
             old_matrix: None,
         }));
         design.pop();
-        log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength {:#?}", design));
         design.repush();
-        log(&format!("{:#?}", design));
+        // log(&format!("ExtrudeAddLength {:#?}", design));
     }
 
     #[wasm_bindgen_test]
@@ -362,7 +363,7 @@ mod test {
         }));
         design.push(DesignOperation::MoveInstance(MoveInstance {
             id,
-            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
             old_matrix: None,
         }));
         // log(&format!("{:#?}", design));
@@ -380,13 +381,16 @@ mod test {
             2000,
         )
         .unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
-        //     id: design.instances[0].id,
-        //     dwidth: 100,
-        //     dheight: 100,
-        //     dthickness: 10,
-        // }));
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
+            id,
+            dwidth: 100,
+            dheight: 100,
+            dthickness: 10,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
+        }));
         // log(&format!("{:#?}", design));
     }
 
@@ -402,13 +406,16 @@ mod test {
             2000,
         )
         .unwrap();
+        let id = add.instance.id;
         design.push(DesignOperation::AddInstance(add));
-        // design.push(DesignOperation::PanelAddSize(PanelAddSize {
-        //     id: design.instances[0].id,
-        //     dwidth: 100,
-        //     dheight: 100,
-        //     dthickness: 10,
-        // }));
+        design.push(DesignOperation::PanelAddSize(PanelAddSize {
+            id,
+            dwidth: 100,
+            dheight: 100,
+            dthickness: 10,
+            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            old_matrix: None,
+        }));
         design.pop();
         // log(&format!("{:#?}", design));
         design.repush();
@@ -442,9 +449,9 @@ mod test {
             dwidth: 100,
             dheight: 100,
             dthickness: 10,
-            new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
+            new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
             old_matrix: None,
         }));
-        // log(&format!("{:#?}", design));
+        log(&format!("{:#?}", design));
     }
 }
