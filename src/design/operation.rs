@@ -38,9 +38,9 @@ impl AddInstance {
         })
     }
 
-    pub fn panel(component: &Component, width: u32, height: u32, thickness: u32) -> Option<Self> {
+    pub fn panel(component: &Component, x: u32, y: u32, thickness: u32) -> Option<Self> {
         Some(AddInstance {
-            instance: Instance::default_panel(component, width, height, thickness)?,
+            instance: Instance::default_panel(component, x, y, thickness)?,
         })
     }
 }
@@ -49,7 +49,9 @@ impl Operation for AddInstance {
     type Target = DesignSpace;
 
     fn operate(&mut self, target: &mut Self::Target) {
-        target.instances.insert(self.instance.id, self.instance.clone());
+        target
+            .instances
+            .insert(self.instance.id, self.instance.clone());
     }
 
     fn inverse(&mut self, target: &mut Self::Target) {
@@ -111,8 +113,7 @@ impl Operation for PostProcessInstance {
                 (config, _) => config,
             };
             // cache the old config
-            self.config_cache
-                .replace(instance.config.clone());
+            self.config_cache.replace(instance.config.clone());
             instance.config = config;
         }
     }
@@ -173,8 +174,8 @@ impl Operation for ExtrudeAddLength {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PanelAddSize {
     pub(crate) id: Uuid,
-    pub(crate) dwidth: i32,
-    pub(crate) dheight: i32,
+    pub(crate) dx: i32,
+    pub(crate) dy: i32,
     pub(crate) dthickness: i32,
     pub(crate) new_matrix: Isometry3<f32>,
     pub(crate) old_matrix: Option<Isometry3<f32>>,
@@ -186,8 +187,8 @@ impl Operation for PanelAddSize {
         let instance = target.instances.get_mut(&self.id);
         if let Some(instance) = instance {
             if let InstanceConfig::Panel(p) = &mut instance.config {
-                p.width = ((p.width as i32) + self.dwidth) as u32;
-                p.height = ((p.height as i32) + self.dheight) as u32;
+                p.x = ((p.x as i32) + self.dx) as u32;
+                p.y = ((p.y as i32) + self.dy) as u32;
                 p.thickness = ((p.thickness as i32) + self.dthickness) as u32;
                 self.old_matrix.replace(instance.matrix);
                 instance.matrix = self.new_matrix;
@@ -199,8 +200,8 @@ impl Operation for PanelAddSize {
         let instance = target.instances.get_mut(&self.id);
         if let Some(instance) = instance {
             if let InstanceConfig::Panel(p) = &mut instance.config {
-                p.width = ((p.width as i32) - self.dwidth) as u32;
-                p.height = ((p.height as i32) - self.dheight) as u32;
+                p.x = ((p.x as i32) - self.dx) as u32;
+                p.y = ((p.y as i32) - self.dy) as u32;
                 p.thickness = ((p.thickness as i32) - self.dthickness) as u32;
                 instance.matrix = self.old_matrix.unwrap();
             }
@@ -208,8 +209,8 @@ impl Operation for PanelAddSize {
     }
 
     fn compress(&mut self, target: &Self) -> bool {
-        self.dwidth += target.dwidth;
-        self.dheight += target.dheight;
+        self.dx += target.dx;
+        self.dy += target.dy;
         self.dthickness += target.dthickness;
         self.new_matrix = target.new_matrix;
         true
@@ -336,11 +337,11 @@ pub fn add_extrude_instance(component: &Component, length: u32) -> Result<Design
 #[wasm_bindgen]
 pub fn add_panel_instance(
     component: &Component,
-    width: u32,
-    height: u32,
+    x: u32,
+    y: u32,
     thickness: u32,
 ) -> Result<DesignOperation, String> {
-    if let Some(op) = AddInstance::panel(component, width, height, thickness) {
+    if let Some(op) = AddInstance::panel(component, x, y, thickness) {
         Ok(DesignOperation::AddInstance(op))
     } else {
         Err("invalid component type: Not Extrude".to_string())
@@ -396,16 +397,16 @@ pub fn extrude_add_length(
 #[wasm_bindgen]
 pub fn panel_add_size(
     instance: &Instance,
-    dwidth: i32,
-    dheight: i32,
+    dx: i32,
+    dy: i32,
     dthickness: i32,
     tra: Translation,
     quat: Quaternion,
 ) -> DesignOperation {
     DesignOperation::PanelAddSize(PanelAddSize {
         id: instance.id,
-        dwidth,
-        dheight,
+        dx,
+        dy,
         dthickness,
         new_matrix: nalgebra::Isometry3::from_parts(
             nalgebra::Translation3::new(tra.x, tra.y, tra.z),
@@ -500,8 +501,8 @@ mod test {
             assert_eq!(
                 op.instance.config,
                 InstanceConfig::Panel(PanelConfig {
-                    width: 100000,
-                    height: 100000,
+                    x: 100000,
+                    y: 100000,
                     thickness: 2000,
                 })
             );
@@ -595,8 +596,8 @@ mod test {
             component_type: ComponentType::Panel,
             matrix: Isometry3::identity(),
             config: InstanceConfig::Panel(PanelConfig {
-                width: 1000,
-                height: 1000,
+                x: 1000,
+                y: 1000,
                 thickness: 100,
             }),
         };
@@ -610,8 +611,8 @@ mod test {
         );
         if let DesignOperation::PanelAddSize(op) = op {
             assert_eq!(op.id, instance.id);
-            assert_eq!(op.dwidth, 100);
-            assert_eq!(op.dheight, 100);
+            assert_eq!(op.dx, 100);
+            assert_eq!(op.dy, 100);
             assert_eq!(op.dthickness, 10);
             assert_eq!(op.new_matrix, Isometry3::identity());
         } else {
@@ -627,8 +628,8 @@ mod test {
             component_type: ComponentType::Panel,
             matrix: Isometry3::identity(),
             config: InstanceConfig::Panel(PanelConfig {
-                width: 1000,
-                height: 1000,
+                x: 1000,
+                y: 1000,
                 thickness: 100,
             }),
         };

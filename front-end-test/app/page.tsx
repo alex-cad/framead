@@ -54,6 +54,16 @@ export default function Home() {
     }) ?? []);
   }
 
+  const handleAddPanel = () => {
+    design.current?.add_panel("Dummy-Plywood-1", 200000, 100000, 2000);
+    setInstances(design.current?.design_space.get_instances().map((instance) => {
+      return {
+        name: instance.label(),
+        id: instance.id(),
+      }
+    }) ?? []);
+  }
+
   const handleRemoveComponent = () => {
     setSelectedInstance(null);
     controls.current?.unbind();
@@ -82,7 +92,7 @@ export default function Home() {
       <div className="absolute top-0 left-0 z-10">
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddExtrude} >添加铝型材</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddFooter} >添加地脚</button>
-        {/* <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddComponent} >添加面板</button> */}
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleAddPanel} >添加面板</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleTranslationControlMode} >移动控制模式</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
 

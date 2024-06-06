@@ -106,8 +106,8 @@ impl Instance {
 
     pub(crate) fn default_panel(
         component: &Component,
-        width: u32,
-        height: u32,
+        x: u32,
+        y: u32,
         thickness: u32,
     ) -> Option<Instance> {
         match &component.data {
@@ -116,7 +116,7 @@ impl Instance {
                 component_label: component.label.clone(),
                 component_type: ComponentType::from_data(&component.data),
                 matrix: Isometry3::identity(),
-                config: InstanceConfig::panel(width, height, thickness),
+                config: InstanceConfig::panel(x, y, thickness),
             }),
             _ => None,
         }
@@ -145,10 +145,10 @@ impl InstanceConfig {
         })
     }
 
-    fn panel(width: u32, height: u32, thickness: u32) -> Self {
+    fn panel(x: u32, y: u32, thickness: u32) -> Self {
         InstanceConfig::Panel(PanelConfig {
-            width,
-            height,
+            x,
+            y,
             thickness,
         })
     }
@@ -228,8 +228,8 @@ pub enum BevelCutConfig {
 #[derive(Debug, Clone, Tsify, Serialize, Deserialize, PartialEq, Eq)]
 // 0.01mm
 pub struct PanelConfig {
-    pub width: u32,
-    pub height: u32,
+    pub x: u32,
+    pub y: u32,
     pub thickness: u32,
 }
 

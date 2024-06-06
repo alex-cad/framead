@@ -30,5 +30,12 @@ export class MaterialLib {
     wheel_footer.envMap = env_texture;
     wheel_footer.needsUpdate = true;
     this.material_map.set("wheel_footer", wheel_footer);
+
+    let plywood = new MeshStandardMaterial({
+      color: 0xd3a173,
+    });
+    plywood.envMap = env_texture;
+    plywood.needsUpdate = true;
+    this.material_map.set("plywood", plywood);
   }
 }

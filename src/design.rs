@@ -385,8 +385,8 @@ mod test {
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id,
-            dwidth: 100,
-            dheight: 100,
+            dx: 100,
+            dy: 100,
             dthickness: 10,
             new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
             old_matrix: None,
@@ -410,8 +410,8 @@ mod test {
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id,
-            dwidth: 100,
-            dheight: 100,
+            dx: 100,
+            dy: 100,
             dthickness: 10,
             new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
             old_matrix: None,
@@ -438,16 +438,16 @@ mod test {
         design.push(DesignOperation::AddInstance(add));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id,
-            dwidth: 100,
-            dheight: 100,
+            dx: 100,
+            dy: 100,
             dthickness: 10,
             new_matrix: Isometry3::translation(100.0, 100.0, 100.0),
             old_matrix: None,
         }));
         design.push(DesignOperation::PanelAddSize(PanelAddSize {
             id,
-            dwidth: 100,
-            dheight: 100,
+            dx: 100,
+            dy: 100,
             dthickness: 10,
             new_matrix: Isometry3::translation(100.0, 100.0, 200.0),
             old_matrix: None,
