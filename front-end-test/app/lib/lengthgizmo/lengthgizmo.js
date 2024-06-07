@@ -117,8 +117,8 @@ class LengthControls extends Object3D {
 		defineProperty('size', 1);
 		defineProperty('dragging', false);
 		defineProperty('showX', true);
-		defineProperty('showY', true);
-		defineProperty('showZ', true);
+		defineProperty('showY', false);
+		defineProperty('showZ', false);
 
 		// Reusable utility variables
 

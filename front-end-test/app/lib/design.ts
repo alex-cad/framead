@@ -222,7 +222,7 @@ export class Design {
         this.rebuild_render_space();
     }
 
-    extrude_add_length(instance: Instance, dlength: number, dir: number) {
+    extrude_add_length_dir(instance: Instance, dlength: number, dir: number) {
         let trans = instance.trans();
         let quat = instance.quat();
         let m = new Matrix4().setPosition(new Vector3(trans.x, trans.y, trans.z));
@@ -232,7 +232,7 @@ export class Design {
         let translation = new Vector3();
         let quaternion = new Quaternion();
         m.decompose(translation, quaternion, new Vector3());
-        
+
         this.design_space.push(extrude_add_length(
             instance, dlength,
             {
@@ -249,17 +249,21 @@ export class Design {
         this.rebuild_render_space();
     }
 
-    extrude_add_right(instance: Instance, dlength: number) {
-        this.extrude_add_length(instance, dlength, -1);
-    }
-    
+    panel_add_size_dir(instance: Instance, dx: number, dy: number, dthickness: number, dx_dir: number, dy_dir: number) {
+        let trans = instance.trans();
+        let quat = instance.quat();
+        let m = new Matrix4().setPosition(new Vector3(trans.x, trans.y, trans.z));
+        let rm = new Matrix4().makeRotationFromQuaternion(new Quaternion(quat.i, quat.j, quat.k, quat.w));
+        m.multiply(rm);
 
-    panel_add_size(instance: Instance, dwidth: number, dheight: number, dthickness: number, m: Matrix4) {
+        m.multiply(new Matrix4().setPosition(new Vector3(dx_dir * dx / 100000 / 2, 0, 0)));
+        m.multiply(new Matrix4().setPosition(new Vector3(0, 0, dy_dir * dy / 100000 / 2)));
         let translation = new Vector3();
         let quaternion = new Quaternion();
         m.decompose(translation, quaternion, new Vector3());
+
         this.design_space.push(panel_add_size(
-            instance, dwidth, dheight, dthickness,
+            instance, dx, dy, dthickness,
             {
                 ...translation,
             },
@@ -273,6 +277,9 @@ export class Design {
         );
         this.rebuild_render_space();
     }
+
+    // panel_add_size_x_dir
+    // panel_add_size_y_dir
 
     move_instance(instance: Instance, m: Matrix4) {
         let translation = new Vector3();
@@ -295,6 +302,11 @@ export class Design {
 
     rebuild_render_space() {
         this.render_space.rebuild(this.design_space);
+    }
+
+    async  load_design(url: string) {
+        
+        this.rebuild_render_space();
     }
 }
 

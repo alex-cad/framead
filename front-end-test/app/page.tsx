@@ -96,7 +96,9 @@ export default function Home() {
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleTranslationControlMode} >移动控制模式</button>
         <button className=" p-2 m-2 bg-slate-50 rounded" onClick={handleRotationControlMode} >旋转控制模式</button>
 
-
+        <button className=" p-2 m-2 bg-slate-50 rounded" onClick={()=>{}}>
+          加载设计模版
+        </button>
         <div className={(instances.length === 0 ? "hidden" : "") + "p-2 m-2 bg-slate-50"}>
           {
             instances.map((instance, index) => (
